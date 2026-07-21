@@ -42,3 +42,7 @@
 - [ ] Story Latios/Latias encounter
 - [ ] Full cross-mode regression suite
 - [ ] Final installer and public GitHub release package
+- [ ] gen2 vc build already just needs adding into the program
+- [ ] usum support
+- [ ] xy support
+- [ ] gen4/5 support if possible using RTCOM needs looking into more so i understand it better
