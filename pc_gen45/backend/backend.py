@@ -29,5 +29,13 @@ class EmulatorBackend(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def set_display(self, enabled: bool) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_audio(self, enabled: bool) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def reset_game(self) -> None:
         raise NotImplementedError
