@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Apply the Pokebot NDS proof-of-concept patch to a pinned nds-bootstrap tree.
 
-This patch is intentionally small:
-- reserves sharedAddr[9..15] as a Pokebot mailbox;
+This patch is intentionally small and NTR-only for v0p1:
+- reserves sharedAddr[9..12] as a four-word Pokebot mailbox;
 - adds PING, timed KEY_SET/RELEASE_ALL and read-only READ32;
 - merges injected DS key bits into nds-bootstrap's existing key-input hook;
-- forces that generic key-input hook on for this dedicated build.
+- forces that generic key-input hook on for this dedicated build;
+- replaces the ARM7 TWiLight in-game-menu helper with a stub to reclaim
+  cardengine space. The normal/release bootstrap is not modified.
 
 Target upstream commit:
 1585a242c80f78fc67cb49a7bfe55a24cc362785
@@ -23,25 +25,30 @@ HEADER = r'''#ifndef POKEBOT_BRIDGE_H
 
 #include <nds/ndstypes.h>
 
-#define POKEBOT_PROTOCOL_VERSION 0x00010000u
+#define POKEBOT_PROTOCOL_VERSION 0x00010001u
 
-/* sharedAddr[] mailbox slots. 0..8 are already used by nds-bootstrap. */
-#define PB_MB_MAGIC   9
+/*
+ * SDK1 card-engine shared block starts at 0x027FFA0C.
+ * Slots 9..12 map to 0x027FFA30..0x027FFA3C.
+ * 0x027FFA40 is UNPATCHED_FUNCTION_LOCATION, so v0p1 must not extend past 12.
+ */
+#define PB_MB_CONTROL 9
 #define PB_MB_COMMAND 10
-#define PB_MB_ARG0    11
-#define PB_MB_ARG1    12
-#define PB_MB_RESP0   13
-#define PB_MB_RESP1   14
-#define PB_MB_STATUS  15
+#define PB_MB_DATA0   11
+#define PB_MB_DATA1   12
 
-#define PB_MAGIC 0x504B4254u /* "PKBT" as a protocol tag */
-#define PB_PONG  0x504F4E47u /* "PONG" */
+#define PB_TAG_BASE 0x504B4200u /* "PKB" + one-byte state */
+#define PB_TAG_MASK 0xFFFFFF00u
 
-#define PB_STATUS_READY 0x52445921u /* "RDY!" */
-#define PB_STATUS_REQ   0x52455121u /* "REQ!" */
-#define PB_STATUS_BUSY  0x42555359u /* "BUSY" */
-#define PB_STATUS_DONE  0x444F4E45u /* "DONE" */
-#define PB_STATUS_ERR   0x45525221u /* "ERR!" */
+#define PB_STATE_READY 0x01u
+#define PB_STATE_REQ   0x02u
+#define PB_STATE_BUSY  0x03u
+#define PB_STATE_DONE  0x04u
+#define PB_STATE_ERR   0x05u
+
+#define PB_CONTROL(state) (PB_TAG_BASE | (state))
+
+#define PB_PONG 0x504F4E47u
 
 #define PB_CMD_PING        0x00000001u
 #define PB_CMD_KEY_SET     0x00000002u
@@ -61,24 +68,9 @@ SOURCE = r'''#include <nds/ndstypes.h>
 
 #include "pokebot_bridge.h"
 
-/*
- * v0p1 is deliberately limited to the ten REG_KEYINPUT buttons:
- * A, B, Select, Start, Right, Left, Up, Down, R, L.
- *
- * KEY_SET is timed. A command with ARG1 == 0 defaults to two VBlanks.
- * Requests above 120 VBlanks are clamped so a dead transport cannot leave
- * a key held indefinitely.
- */
-static volatile u16 injectedKeys = 0;
-static volatile u16 injectedKeyFrames = 0;
-
-static bool valid_read32_address(u32 address) {
-    if (address & 3u) {
-        return false;
-    }
-
-    return address >= 0x02000000u && address <= 0x023FFFFCu;
-}
+/* v0p1 synthesizes only the ten REG_KEYINPUT buttons. */
+static volatile u16 injectedKeys;
+static volatile u16 injectedKeyFrames;
 
 static void release_all(void) {
     injectedKeys = 0;
@@ -86,94 +78,91 @@ static void release_all(void) {
 }
 
 void pokebot_bridge_tick(volatile u32 *shared) {
-    if (injectedKeyFrames > 0) {
-        injectedKeyFrames--;
-        if (injectedKeyFrames == 0) {
-            injectedKeys = 0;
-        }
-    }
+    if (injectedKeyFrames && --injectedKeyFrames == 0)
+        injectedKeys = 0;
 
-    if (shared[PB_MB_MAGIC] != PB_MAGIC) {
+    if ((shared[PB_MB_CONTROL] & PB_TAG_MASK) != PB_TAG_BASE) {
         release_all();
         shared[PB_MB_COMMAND] = 0;
-        shared[PB_MB_ARG0] = 0;
-        shared[PB_MB_ARG1] = 0;
-        shared[PB_MB_RESP0] = 0;
-        shared[PB_MB_RESP1] = POKEBOT_PROTOCOL_VERSION;
-        shared[PB_MB_MAGIC] = PB_MAGIC;
-        shared[PB_MB_STATUS] = PB_STATUS_READY;
+        shared[PB_MB_DATA0] = 0;
+        shared[PB_MB_DATA1] = POKEBOT_PROTOCOL_VERSION;
+        shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_READY);
         return;
     }
 
-    if (shared[PB_MB_STATUS] != PB_STATUS_REQ) {
+    if (shared[PB_MB_CONTROL] != PB_CONTROL(PB_STATE_REQ))
         return;
-    }
 
     const u32 command = shared[PB_MB_COMMAND];
-    const u32 arg0 = shared[PB_MB_ARG0];
-    const u32 arg1 = shared[PB_MB_ARG1];
+    const u32 data0 = shared[PB_MB_DATA0];
+    u32 data1 = shared[PB_MB_DATA1];
 
-    shared[PB_MB_STATUS] = PB_STATUS_BUSY;
-    shared[PB_MB_RESP0] = 0;
-    shared[PB_MB_RESP1] = POKEBOT_PROTOCOL_VERSION;
+    shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_BUSY);
 
-    switch (command) {
-        case PB_CMD_PING:
-            shared[PB_MB_RESP0] = PB_PONG;
-            shared[PB_MB_STATUS] = PB_STATUS_DONE;
-            break;
+    if (command == PB_CMD_PING) {
+        shared[PB_MB_DATA0] = PB_PONG;
+        shared[PB_MB_DATA1] = POKEBOT_PROTOCOL_VERSION;
+        shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_DONE);
+        return;
+    }
 
-        case PB_CMD_KEY_SET: {
-            u32 frames = arg1;
-            if (frames == 0) {
-                frames = 2;
-            } else if (frames > 120) {
-                frames = 120;
-            }
+    if (command == PB_CMD_KEY_SET) {
+        if (data1 == 0)
+            data1 = 2;
+        else if (data1 > 120)
+            data1 = 120;
 
-            injectedKeys = (u16)(arg0 & 0x03FFu);
-            injectedKeyFrames = (u16)frames;
+        injectedKeys = (u16)(data0 & 0x03FFu);
+        injectedKeyFrames = (u16)data1;
+        shared[PB_MB_DATA0] = injectedKeys;
+        shared[PB_MB_DATA1] = data1;
+        shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_DONE);
+        return;
+    }
 
-            shared[PB_MB_RESP0] = injectedKeys;
-            shared[PB_MB_RESP1] = frames;
-            shared[PB_MB_STATUS] = PB_STATUS_DONE;
-            break;
+    if (command == PB_CMD_RELEASE_ALL) {
+        release_all();
+        shared[PB_MB_DATA0] = 0;
+        shared[PB_MB_DATA1] = 0;
+        shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_DONE);
+        return;
+    }
+
+    if (command == PB_CMD_READ32) {
+        if ((data0 & 3u) || data0 < 0x02000000u || data0 > 0x023FFFFCu) {
+            shared[PB_MB_DATA0] = PB_ERR_BAD_ADDRESS;
+            shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_ERR);
+            return;
         }
 
-        case PB_CMD_RELEASE_ALL:
-            release_all();
-            shared[PB_MB_STATUS] = PB_STATUS_DONE;
-            break;
-
-        case PB_CMD_READ32:
-            if (!valid_read32_address(arg0)) {
-                shared[PB_MB_RESP0] = PB_ERR_BAD_ADDRESS;
-                shared[PB_MB_STATUS] = PB_STATUS_ERR;
-                break;
-            }
-
-            shared[PB_MB_RESP0] = *(volatile u32 *)arg0;
-            shared[PB_MB_STATUS] = PB_STATUS_DONE;
-            break;
-
-        default:
-            shared[PB_MB_RESP0] = PB_ERR_BAD_COMMAND;
-            shared[PB_MB_STATUS] = PB_STATUS_ERR;
-            break;
+        shared[PB_MB_DATA0] = *(volatile u32 *)data0;
+        shared[PB_MB_DATA1] = POKEBOT_PROTOCOL_VERSION;
+        shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_DONE);
+        return;
     }
+
+    shared[PB_MB_DATA0] = PB_ERR_BAD_COMMAND;
+    shared[PB_MB_CONTROL] = PB_CONTROL(PB_STATE_ERR);
 }
 
 void pokebot_bridge_apply_keys(u16 *keyInput, u16 *extKeyInput) {
     (void)extKeyInput;
-
-    /*
-     * REG_KEYINPUT is active-low. Clear requested bits so the game sees
-     * those buttons as pressed. v0p1 intentionally does not synthesize
-     * X/Y/touch yet.
-     */
     *keyInput &= (u16)~(injectedKeys & 0x03FFu);
 }
 '''
+
+IGM_STUB = r'''/*
+ * Pokebot nds-bootstrap v0p1 space trade-off.
+ *
+ * The stock ARM7 cardengine is packed into a 4 KiB + 0x80 region. The
+ * Pokebot mailbox/input reader needs some of that space, so the dedicated
+ * test build gives up the ARM7 TWiLight in-game-menu helper. This does not
+ * affect the normal release bootstrap.
+ */
+void inGameMenu(void) {
+}
+'''
+
 
 def replace_once(path: Path, old: str, new: str) -> None:
     text = path.read_text(encoding="utf-8")
@@ -191,15 +180,17 @@ def main() -> None:
     root = args.tree.resolve()
     cardengine = root / "retail/cardengine/arm7/source/cardengine.c"
     patch_arm9 = root / "retail/bootloader/source/arm7/patch_arm9.c"
+    in_game_menu = root / "retail/cardengine/arm7/source/inGameMenu.c"
     bridge_h = root / "retail/cardengine/arm7/include/pokebot_bridge.h"
     bridge_c = root / "retail/cardengine/arm7/source/pokebot_bridge.c"
 
-    for required in (cardengine, patch_arm9):
+    for required in (cardengine, patch_arm9, in_game_menu):
         if not required.is_file():
             raise FileNotFoundError(required)
 
     bridge_h.write_text(HEADER, encoding="utf-8")
     bridge_c.write_text(SOURCE, encoding="utf-8")
+    in_game_menu.write_text(IGM_STUB, encoding="utf-8")
 
     replace_once(
         cardengine,
@@ -229,8 +220,9 @@ def main() -> None:
 
     print("Pokebot NDS v0p1 patch applied")
     print(f"Pinned upstream: {PINNED_COMMIT}")
-    print("Mailbox: sharedAddr[9..15]")
+    print("Mailbox: sharedAddr[9..12] / 0x027FFA30..0x027FFA3C")
     print("Commands: PING, KEY_SET (timed), RELEASE_ALL, READ32")
+    print("Dedicated-build trade-off: ARM7 TWiLight in-game menu helper disabled")
 
 
 if __name__ == "__main__":
