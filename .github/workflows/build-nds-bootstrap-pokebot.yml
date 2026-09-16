@@ -21,8 +21,15 @@ jobs:
       - name: Checkout Pokebot staging branch
         uses: actions/checkout@v4
 
-      - name: Verify preinstalled build tools
+      - name: Install host tools from matching Debian snapshot
         run: |
+          rm -f /etc/apt/sources.list.d/*.list
+          cat > /etc/apt/sources.list <<'EOF'
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20241104T000000Z bullseye main
+          deb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20241104T000000Z bullseye-security main
+          EOF
+          apt-get -o Acquire::Check-Valid-Until=false update
+          apt-get -o Acquire::Check-Valid-Until=false install -y gcc python3
           git --version
           gcc --version
           python3 --version
