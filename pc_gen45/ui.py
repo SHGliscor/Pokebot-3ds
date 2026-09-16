@@ -694,13 +694,19 @@ class PokebotUI:
             wait = tk.Frame(self.current_cards_wrap, bg=PANEL_2)
             wait.pack(fill="both", expand=True)
             self._label(
-                wait, "Waiting for encounter",
-                font=("Segoe UI Semibold", 13), bg=PANEL_2
-            ).pack(pady=(28, 3))
+                wait,
+                "Waiting for starter set",
+                font=("Segoe UI Semibold", 13),
+                bg=PANEL_2,
+            ).pack(pady=(24, 3))
             self._label(
                 wait,
-                "The latest RAM-valid PK4 will appear here.",
-                font=("Segoe UI", 8), fg=MUTED, bg=PANEL_2
+                "Chikorita, Cyndaquil and Totodile will all appear here once the RAM-valid set is ready.",
+                font=("Segoe UI", 8),
+                fg=MUTED,
+                bg=PANEL_2,
+                wraplength=520,
+                justify="center",
             ).pack()
             mini = tk.Frame(wait, bg=PANEL_2)
             mini.pack(pady=10)
@@ -708,114 +714,165 @@ class PokebotUI:
                 img = self._sprite(species, False, small=True)
                 lab = tk.Label(mini, image=img, bg=PANEL_2)
                 lab.image = img
-                lab.pack(side="left", padx=5)
+                lab.pack(side="left", padx=6)
             return
 
-        # Gen3 overlay semantics: one current encounter hero. For HGSS starter
-        # sets, show the final decoded member while retaining the full set
-        # as compact mini sprites below.
-        mon = self.current_mons[-1]
-        shiny = bool(mon.get("shiny"))
-        hero = tk.Frame(
-            self.current_cards_wrap,
-            bg=PANEL_2,
-            highlightthickness=2 if shiny else 0,
-            highlightbackground=SHINY,
+        # HG/SS exposes all three starters before selection. Treat the full
+        # triplet as the current encounter and give every starter its own
+        # complete telemetry card.
+        cards = tk.Frame(self.current_cards_wrap, bg=PANEL)
+        cards.pack(fill="both", expand=True)
+        for col in range(3):
+            cards.grid_columnconfigure(col, weight=1, uniform="starter")
+        cards.grid_rowconfigure(0, weight=1)
+
+        ordered = sorted(
+            self.current_mons[:3],
+            key=lambda mon: STARTER_IDS.index(int(mon.get("species", 0)))
+            if int(mon.get("species", 0)) in STARTER_IDS else 99,
         )
-        hero.pack(fill="both", expand=True)
 
-        left = tk.Frame(hero, bg=PANEL_2, width=120)
-        left.pack(side="left", fill="y", padx=(7, 5), pady=7)
-        img = self._sprite(int(mon["species"]), shiny)
-        sprite = tk.Label(left, image=img, bg=PANEL_2)
-        sprite.image = img
-        sprite.pack()
+        for col, mon in enumerate(ordered):
+            shiny = bool(mon.get("shiny"))
+            sv = int(mon.get("sv", 99999))
+            border = SHINY if shiny else BORDER
 
-        self._label(
-            left,
-            ("★ " if shiny else "") + str(mon.get("name", "Pokémon")),
-            font=("Segoe UI Semibold", 11),
-            fg=SHINY if shiny else TEXT,
-            bg=PANEL_2,
-        ).pack()
-
-        set_strip = tk.Frame(left, bg=PANEL_2)
-        set_strip.pack(pady=(6, 0))
-        for set_mon in self.current_mons[:3]:
-            set_img = self._sprite(
-                int(set_mon["species"]), bool(set_mon.get("shiny")), small=True
+            card = tk.Frame(
+                cards,
+                bg=PANEL_2,
+                highlightthickness=2 if shiny else 1,
+                highlightbackground=border,
             )
-            set_lab = tk.Label(set_strip, image=set_img, bg=PANEL_2)
-            set_lab.image = set_img
-            set_lab.pack(side="left", padx=1)
+            card.grid(
+                row=0,
+                column=col,
+                sticky="nsew",
+                padx=(0 if col == 0 else 3, 0 if col == 2 else 3),
+            )
 
-        right = tk.Frame(hero, bg=PANEL_2)
-        right.pack(side="left", fill="both", expand=True, padx=(3, 8), pady=7)
+            head = tk.Frame(card, bg=PANEL_2)
+            head.pack(fill="x", padx=6, pady=(6, 2))
 
-        meta = tk.Frame(right, bg=PANEL_2)
-        meta.pack(fill="x")
-        meta_pairs = (
-            ("PID", mon.get("pid", "-")),
-            ("Nature", mon.get("nature", "-")),
-            ("Ability", str(mon.get("ability", "-"))),
-            ("Hidden Power", mon.get("hidden_power", "-")),
-            ("SV", str(mon.get("sv", "-"))),
-        )
-        for idx, (name, value) in enumerate(meta_pairs):
-            cell = tk.Frame(meta, bg="#152431")
-            cell.grid(row=idx // 3, column=idx % 3, sticky="ew", padx=2, pady=2)
-            meta.grid_columnconfigure(idx % 3, weight=1)
+            img = self._sprite(int(mon["species"]), shiny)
+            sprite = tk.Label(head, image=img, bg=PANEL_2)
+            sprite.image = img
+            sprite.pack()
+
             self._label(
-                cell, name.upper(), font=("Segoe UI Semibold", 6),
-                fg=MUTED, bg="#152431"
-            ).pack(pady=(3, 0))
-            value_fg = TEXT
-            if name == "SV":
-                sv = int(mon.get("sv", 99999))
-                if sv < 8:
-                    value_fg = GOOD
-                elif sv >= 65528:
-                    value_fg = ANTI
-            self._label(
-                cell, str(value), font=("Consolas", 8),
-                fg=value_fg, bg="#152431"
-            ).pack(pady=(0, 3))
+                head,
+                ("★ " if shiny else "") + str(mon.get("name", "Pokémon")),
+                font=("Segoe UI Semibold", 10),
+                fg=SHINY if shiny else TEXT,
+                bg=PANEL_2,
+            ).pack(pady=(0, 1))
 
-        self._label(
-            right, "IVS", font=("Segoe UI Semibold", 7),
-            fg=MUTED, bg=PANEL_2
-        ).pack(anchor="w", pady=(5, 1))
+            if shiny:
+                self._label(
+                    head,
+                    "SHINY",
+                    font=("Segoe UI Semibold", 7),
+                    fg=SHINY,
+                    bg=PANEL_2,
+                ).pack()
 
-        ivrow = tk.Frame(right, bg=PANEL_2)
-        ivrow.pack(fill="x")
-        names = ("HP", "ATK", "DEF", "SPA", "SPD", "SPE")
-        ivs = list(mon.get("ivs", []))
-        while len(ivs) < 6:
-            ivs.append(0)
-        for idx, (name, value) in enumerate(zip(names, ivs[:6])):
-            cell = tk.Frame(ivrow, bg="#152431")
-            cell.grid(row=0, column=idx, sticky="ew", padx=2)
-            ivrow.grid_columnconfigure(idx, weight=1)
-            self._label(
-                cell, name, font=("Segoe UI Semibold", 6),
-                fg=MUTED, bg="#152431"
-            ).pack(pady=(3, 0))
-            iv_fg = GOOD if value == 31 else (BAD if value == 0 else TEXT)
-            self._label(
-                cell, str(value), font=("Consolas", 11),
-                fg=iv_fg, bg="#152431"
-            ).pack(pady=(0, 3))
+            meta = tk.Frame(card, bg=PANEL_2)
+            meta.pack(fill="x", padx=5, pady=(1, 3))
+            meta_pairs = (
+                ("PID", mon.get("pid", "-")),
+                ("Nature", mon.get("nature", "-")),
+                ("Ability", mon.get("ability", "-")),
+                ("Hidden Power", mon.get("hidden_power", "-")),
+                ("SV", mon.get("sv", "-")),
+            )
+            for idx, (name, value) in enumerate(meta_pairs):
+                cell = tk.Frame(meta, bg="#152431")
+                cell.grid(
+                    row=idx,
+                    column=0,
+                    sticky="ew",
+                    pady=1,
+                )
+                meta.grid_columnconfigure(0, weight=1)
 
-        foot = tk.Frame(right, bg=PANEL_2)
-        foot.pack(fill="x", pady=(5, 0))
-        self._label(
-            foot, f"IV SUM  {sum(ivs[:6])}",
-            font=("Consolas", 8), fg=BORDER, bg=PANEL_2
-        ).pack(side="left")
-        self._label(
-            foot, "RAM VALID",
-            font=("Segoe UI Semibold", 7), fg=GOOD, bg=PANEL_2
-        ).pack(side="right")
+                self._label(
+                    cell,
+                    name.upper(),
+                    font=("Segoe UI Semibold", 6),
+                    fg=MUTED,
+                    bg="#152431",
+                ).pack(side="left", padx=5, pady=3)
+
+                value_fg = TEXT
+                if name == "SV":
+                    if sv < 8:
+                        value_fg = GOOD
+                    elif sv >= 65528:
+                        value_fg = ANTI
+
+                self._label(
+                    cell,
+                    str(value),
+                    font=("Consolas", 7),
+                    fg=value_fg,
+                    bg="#152431",
+                    anchor="e",
+                ).pack(side="right", padx=5, pady=3)
+
+            self._label(
+                card,
+                "IVS",
+                font=("Segoe UI Semibold", 6),
+                fg=MUTED,
+                bg=PANEL_2,
+            ).pack(anchor="w", padx=6, pady=(3, 1))
+
+            ivrow = tk.Frame(card, bg=PANEL_2)
+            ivrow.pack(fill="x", padx=4)
+
+            iv_names = ("HP", "ATK", "DEF", "SPA", "SPD", "SPE")
+            ivs = list(mon.get("ivs", []))
+            while len(ivs) < 6:
+                ivs.append(0)
+
+            for idx, (name, value) in enumerate(zip(iv_names, ivs[:6])):
+                cell = tk.Frame(ivrow, bg="#152431")
+                cell.grid(row=0, column=idx, sticky="ew", padx=1)
+                ivrow.grid_columnconfigure(idx, weight=1)
+
+                self._label(
+                    cell,
+                    name,
+                    font=("Segoe UI Semibold", 5),
+                    fg=MUTED,
+                    bg="#152431",
+                ).pack(pady=(2, 0))
+
+                iv_fg = GOOD if value == 31 else (BAD if value == 0 else TEXT)
+                self._label(
+                    cell,
+                    str(value),
+                    font=("Consolas", 8),
+                    fg=iv_fg,
+                    bg="#152431",
+                ).pack(pady=(0, 2))
+
+            foot = tk.Frame(card, bg=PANEL_2)
+            foot.pack(fill="x", padx=6, pady=(4, 6))
+            self._label(
+                foot,
+                f"IV SUM {sum(ivs[:6])}",
+                font=("Consolas", 7),
+                fg=BORDER,
+                bg=PANEL_2,
+            ).pack(side="left")
+            self._label(
+                foot,
+                "RAM VALID",
+                font=("Segoe UI Semibold", 6),
+                fg=GOOD,
+                bg=PANEL_2,
+            ).pack(side="right")
+
     def _render_last_seen(self) -> None:
         for child in self.last_seen_wrap.winfo_children():
             child.destroy()
