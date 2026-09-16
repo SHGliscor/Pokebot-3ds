@@ -532,4 +532,59 @@ replace_once(
 """,
 )
 
-print("Applied Pokebot native UDP, RAM, background input, fast-forward, sol2 compiler, and Windows linker compatibility patches")
+
+replace_once(
+    emu_instance_h,
+    """#include <SDL2/SDL.h>
+""",
+    """#include <SDL2/SDL.h>
+#include <atomic>
+""",
+)
+
+replace_once(
+    emu_instance_h,
+    """    void toggleAudioMute();
+    void updateFastForwardMute(bool fastForward);
+""",
+    """    void toggleAudioMute();
+    void setPokebotAudioEnabled(bool enabled) { audioMutedByPokebot.store(!enabled); }
+    void updateFastForwardMute(bool fastForward);
+""",
+)
+
+replace_once(
+    emu_instance_h,
+    """    bool audioMutedToggle;
+    bool audioMutedByFastForward;
+    bool audioMutedByWindowFocus;
+""",
+    """    bool audioMutedToggle;
+    bool audioMutedByFastForward;
+    bool audioMutedByWindowFocus;
+    std::atomic<bool> audioMutedByPokebot{false};
+""",
+)
+
+replace_once(
+    emu_audio,
+    """    audioMutedToggle = false;
+    audioMutedByFastForward = false;
+    audioMutedByWindowFocus = false;
+""",
+    """    audioMutedToggle = false;
+    audioMutedByFastForward = false;
+    audioMutedByWindowFocus = false;
+    audioMutedByPokebot.store(false);
+""",
+)
+
+replace_once(
+    emu_audio,
+    """    if ((num_in < 1) || inst->audioMutedByWindowFocus || inst->audioMutedToggle || inst->audioMutedByFastForward)
+""",
+    """    if ((num_in < 1) || inst->audioMutedByWindowFocus || inst->audioMutedToggle || inst->audioMutedByFastForward || inst->audioMutedByPokebot.load())
+""",
+)
+
+print("Applied Pokebot native UDP, RAM, background input, headless display, audio mute, fast-forward, sol2 compiler, and Windows linker compatibility patches")
