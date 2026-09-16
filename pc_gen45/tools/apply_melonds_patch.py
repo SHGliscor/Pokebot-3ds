@@ -22,6 +22,8 @@ cmake_qt = ROOT / "src/frontend/qt_sdl/CMakeLists.txt"
 script_h = ROOT / "src/frontend/qt_sdl/ScriptManager.h"
 emu_thread = ROOT / "src/frontend/qt_sdl/EmuThread.cpp"
 emu_lua = ROOT / "lua/core/emu.lua"
+emu_instance_h = ROOT / "src/frontend/qt_sdl/EmuInstance.h"
+emu_audio = ROOT / "src/frontend/qt_sdl/EmuInstanceAudio.cpp"
 
 replace_once(
     cpp,
@@ -156,6 +158,7 @@ replace_once(
 """,
     """    bool externalInputsBlocked() const { return luaInputActive; }
     melonDS::u32 externalInputMask() const { return luaInputMask.load(); }
+    bool pokebotDisplayEnabled() const { return pokebotDisplayOn; }
 """,
 )
 
@@ -213,6 +216,7 @@ replace_once(
     std::intptr_t pokebotSocket = -1;
     bool pokebotWSAStarted = false;
     std::array<int, 12> pokebotPulseFrames{};
+    bool pokebotDisplayOn = true;
 
     // reset variables, callbacks
 """,
@@ -464,6 +468,24 @@ void ScriptManager::pollPokebotBridge()
                 break;
             }
             emuInstances[0]->fastForwardToggled = req[9] != 0;
+            break;
+
+        case 8: // DISPLAY: u8 enabled
+            if (n < 10)
+            {
+                fail("bad DISPLAY");
+                break;
+            }
+            pokebotDisplayOn = req[9] != 0;
+            break;
+
+        case 9: // AUDIO: u8 enabled
+            if (n < 10)
+            {
+                fail("bad AUDIO");
+                break;
+            }
+            emuInstances[0]->setPokebotAudioEnabled(req[9] != 0);
             break;
 
         default:
