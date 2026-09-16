@@ -266,17 +266,14 @@ def _reach_hgss_starter_screen(
                 live_base = None
 
             if live_base is None:
-                # On retail HGSS, A is accepted at "Touch to Start". Use a
-                # substantial 10-frame A press followed by a clean release gap.
-                # Every fourth cycle also sends Start first as a compatibility
-                # assist for title-state timing; A remains the primary input.
+                # The uploaded retail-behaviour video confirms A alone
+                # advances HGSS' "Touch to Start" screen. Reproduce a deliberate
+                # physical press: ~200 ms down at 60 FPS, then ~250 ms released.
+                # Do not mix Start into this phase; doing so only adds timing
+                # variance between title and Continue.
                 boot_input_cycle += 1
-                if boot_input_cycle % 4 == 0:
-                    backend.pulse("Start", 6)
-                    time.sleep(0.12)
-
-                backend.pulse("A", 10)
-                time.sleep(0.22)
+                backend.pulse("A", 12)
+                time.sleep(0.25)
                 continue
 
             if not loaded_reported:
