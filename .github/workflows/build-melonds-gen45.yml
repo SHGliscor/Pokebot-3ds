@@ -143,9 +143,23 @@ jobs:
           @'
           @echo off
           cd /d "%~dp0"
+          python pokebot_gen45.py hgss-starter-check
+          pause
+          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_CHECK.bat
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          python pokebot_gen45.py hgss-starter-hunt
+          pause
+          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_HUNTER.bat
+
+          @'
+          @echo off
+          cd /d "%~dp0"
           python pokebot_gen45.py starter-probe
           pause
-          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_PROBE.bat
+          '@ | Set-Content -Encoding ASCII artifact\LEGACY_HEARTGOLD_STARTER_PROBE.bat
 
           @'
           Pokebot Gen4/5 PC v0p1
@@ -153,11 +167,13 @@ jobs:
           1. Run melonDS.exe and boot HeartGold.
           2. In melonDS load/run lua\pokebot_bridge.lua.
           3. Run TEST_BRIDGE.bat. It should print a Pokebot-melonDS response.
-          4. Run SCAN_RAM.bat in the overworld.
-          5. For the starter proof, save immediately before Elm's starter
-             selection and run HEARTGOLD_STARTER_PROBE.bat.
-          6. Choose one starter when the probe asks, return control to the
-             player, then press Enter in the probe window.
+          4. For HGSS starters, save at/near Elm's starter machine.
+          5. Open the starter selection screen once and run
+             HEARTGOLD_STARTER_CHECK.bat to verify all three are read.
+          6. Run HEARTGOLD_STARTER_HUNTER.bat for the automatic shiny loop.
+             It checks all three starters before selection and resets if none
+             are shiny. It stops before choosing anything when a shiny appears.
+          7. SCAN_RAM.bat remains available for RAM diagnostics.
 
           Target ROM:
           HeartGold Europe v10
@@ -182,6 +198,6 @@ jobs:
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
-          name: Pokebot-Gen45-PC-v0p1
+          name: Pokebot-Gen45-PC-HGSS-StarterHunter
           path: artifact/
           if-no-files-found: error
