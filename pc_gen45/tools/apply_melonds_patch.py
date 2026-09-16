@@ -17,6 +17,7 @@ def replace_once(path: Path, old: str, new: str) -> None:
 
 cpp = ROOT / "src/frontend/qt_sdl/ScriptManager.cpp"
 mem = ROOT / "lua/core/memory.lua"
+sol = ROOT / "sol/sol.hpp"
 
 replace_once(
     cpp,
@@ -71,4 +72,17 @@ end
 """,
 )
 
-print("Applied Pokebot melonDS bulk-read patch")
+replace_once(
+    sol,
+    """\t\t\t*this = nullopt;
+\t\t\tthis->construct(std::forward<Args>(args)...);
+\t\t}
+""",
+    """\t\t\t*this = nullopt;
+\t\t\tnew (static_cast<void*>(this)) optional(std::in_place, std::forward<Args>(args)...);
+\t\t\treturn **this;
+\t\t}
+""",
+)
+
+print("Applied Pokebot melonDS bulk-read + sol2 compiler compatibility patches")
