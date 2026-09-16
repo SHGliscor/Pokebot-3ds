@@ -62,6 +62,7 @@ jobs:
           cd pc_gen45
           python pokebot_gen45.py --help >/dev/null
           python pokebot_gen45.py hgss-starter-hunt --help >/dev/null
+          python pokebot_gen45.py input-test --help >/dev/null
 
       - name: Fetch pinned melonDS-Lua
         run: |
@@ -154,9 +155,10 @@ jobs:
           echo 2. Check current HGSS starters
           echo 3. Start HGSS shiny starter hunter
           echo 4. Test Pokebot bridge
-          echo 5. Scan ARM9 RAM
-          echo 6. Legacy starter probe
-          echo 7. Open first-test instructions
+          echo 5. Test BACKGROUND A input
+          echo 6. Scan ARM9 RAM
+          echo 7. Legacy starter probe
+          echo 8. Open first-test instructions
           echo 0. Exit
           echo.
           set /p choice=Select an option: 
@@ -181,16 +183,22 @@ jobs:
             goto menu
           )
           if "%choice%"=="5" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" scan
+            echo Keep melonDS unfocused. This should press A in-game.
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" input-test --key A --frames 6
             pause
             goto menu
           )
           if "%choice%"=="6" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" starter-probe
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" scan
             pause
             goto menu
           )
           if "%choice%"=="7" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" starter-probe
+            pause
+            goto menu
+          )
+          if "%choice%"=="8" (
             start "" notepad "%~dp0docs\FIRST_TEST.txt"
             goto menu
           )
@@ -214,9 +222,11 @@ jobs:
           3. Boot HeartGold Europe v10.
           4. In melonDS load emulator\lua\pokebot_bridge.lua.
           5. Return to Pokebot-Gen45.bat and choose 4 to test the bridge.
-          6. Open Elm's starter selection screen and choose 2.
+          6. Choose 5 while melonDS is NOT focused. It should press A in-game.
+             This verifies the patched background-input path.
+          7. Open Elm's starter selection screen and choose 2.
              It should show Chikorita, Cyndaquil and Totodile without selecting one.
-          7. If correct, choose 3 for the automatic shiny starter hunt.
+          8. If correct, choose 3 for the automatic shiny starter hunt.
 
           Target ROM:
           HeartGold Europe v10
