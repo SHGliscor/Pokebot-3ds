@@ -99,109 +99,150 @@ jobs:
           cmake --build build-pokebot --parallel 4
           test -s build-pokebot/melonDS.exe
 
-      - name: Stage emulator and runtime DLLs
+      - name: Stage packaged folder layout
         run: |
           set -eux
-          mkdir -p artifact/lua artifact/backend artifact/gen4 artifact/data artifact/pokebot_ipc
-          cp melonDS-lua/build-pokebot/melonDS.exe artifact/melonDS.exe
+          ROOT="artifact/Pokebot-Gen45-PC-HGSS-StarterHunter"
+          mkdir -p "$ROOT/emulator/lua" "$ROOT/bot/backend" "$ROOT/bot/gen4" "$ROOT/bot/data" "$ROOT/docs" "$ROOT/tools" "$ROOT/pokebot_ipc"
+
+          cp melonDS-lua/build-pokebot/melonDS.exe "$ROOT/emulator/melonDS.exe"
 
           DEPLOYQT="$(command -v windeployqt6 || command -v windeployqt || true)"
           if [ -n "$DEPLOYQT" ]; then
-            "$DEPLOYQT" artifact/melonDS.exe --release --no-translations || true
+            "$DEPLOYQT" "$ROOT/emulator/melonDS.exe" --release --no-translations || true
           fi
 
-          # Copy all non-system UCRT64 DLL dependencies reported by ldd.
+          # Keep all emulator runtime DLLs beside melonDS.exe, not in the bot root.
           for pass in 1 2 3; do
-            ldd artifact/melonDS.exe \
+            ldd "$ROOT/emulator/melonDS.exe" \
               | awk '/=> \/ucrt64\/bin\// {print $3}' \
               | sort -u \
               | while read -r dll; do
-                  [ -f "$dll" ] && cp -n "$dll" artifact/ || true
+                  [ -f "$dll" ] && cp -n "$dll" "$ROOT/emulator/" || true
                 done
           done
 
-          cp -R melonDS-lua/lua/core artifact/lua/core
-          cp pc_gen45/melonds/pokebot_bridge.lua artifact/lua/pokebot_bridge.lua
-          cp pc_gen45/pokebot_gen45.py artifact/
-          cp pc_gen45/backend/*.py artifact/backend/
-          cp pc_gen45/gen4/*.py artifact/gen4/
-          cp pc_gen45/data/species_gen4.json artifact/data/
-          cp pc_gen45/README.md artifact/README.md
-          cp melonDS-lua/LICENSE artifact/MELONDS_GPLv3_LICENSE.txt
+          cp -R melonDS-lua/lua/core "$ROOT/emulator/lua/core"
+          cp pc_gen45/melonds/pokebot_bridge.lua "$ROOT/emulator/lua/pokebot_bridge.lua"
 
-      - name: Add Windows test launchers
+          cp pc_gen45/pokebot_gen45.py "$ROOT/bot/"
+          cp pc_gen45/backend/*.py "$ROOT/bot/backend/"
+          cp pc_gen45/gen4/*.py "$ROOT/bot/gen4/"
+          cp pc_gen45/data/species_gen4.json "$ROOT/bot/data/"
+
+          cp pc_gen45/README.md "$ROOT/docs/README.md"
+          cp melonDS-lua/LICENSE "$ROOT/docs/MELONDS_GPLv3_LICENSE.txt"
+
+      - name: Add clean Windows launcher and docs
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $Root = 'artifact\Pokebot-Gen45-PC-HGSS-StarterHunter'
 
           @'
           @echo off
+          setlocal
           cd /d "%~dp0"
-          python pokebot_gen45.py ping
-          pause
-          '@ | Set-Content -Encoding ASCII artifact\TEST_BRIDGE.bat
+
+          :menu
+          cls
+          echo ============================================================
+          echo Pokebot Gen45 PC - HGSS Starter Hunter
+          echo ============================================================
+          echo.
+          echo 1. Start melonDS
+          echo 2. Check current HGSS starters
+          echo 3. Start HGSS shiny starter hunter
+          echo 4. Test Pokebot bridge
+          echo 5. Scan ARM9 RAM
+          echo 6. Legacy starter probe
+          echo 7. Open first-test instructions
+          echo 0. Exit
+          echo.
+          set /p choice=Select an option: 
+
+          if "%choice%"=="1" (
+            start "" "%~dp0emulator\melonDS.exe"
+            goto menu
+          )
+          if "%choice%"=="2" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" hgss-starter-check
+            pause
+            goto menu
+          )
+          if "%choice%"=="3" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" hgss-starter-hunt
+            pause
+            goto menu
+          )
+          if "%choice%"=="4" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" ping
+            pause
+            goto menu
+          )
+          if "%choice%"=="5" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" scan
+            pause
+            goto menu
+          )
+          if "%choice%"=="6" (
+            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" starter-probe
+            pause
+            goto menu
+          )
+          if "%choice%"=="7" (
+            start "" notepad "%~dp0docs\FIRST_TEST.txt"
+            goto menu
+          )
+          if "%choice%"=="0" exit /b 0
+          goto menu
+          '@ | Set-Content -Encoding ASCII "$Root\Pokebot-Gen45.bat"
 
           @'
-          @echo off
-          cd /d "%~dp0"
-          python pokebot_gen45.py scan
-          pause
-          '@ | Set-Content -Encoding ASCII artifact\SCAN_RAM.bat
+          Pokebot Gen45 PC - HGSS Starter Hunter
 
-          @'
-          @echo off
-          cd /d "%~dp0"
-          python pokebot_gen45.py hgss-starter-check
-          pause
-          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_CHECK.bat
+          Folder layout:
+            emulator\     melonDS.exe, runtime DLLs, Lua bridge/core
+            bot\          Python bot, backend, Gen4 parser and species data
+            docs\         README, first-test guide, licenses and hashes
+            tools\        reserved for diagnostics/support tools
+            pokebot_ipc\  bridge command/response files
 
-          @'
-          @echo off
-          cd /d "%~dp0"
-          python pokebot_gen45.py hgss-starter-hunt
-          pause
-          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_HUNTER.bat
-
-          @'
-          @echo off
-          cd /d "%~dp0"
-          python pokebot_gen45.py starter-probe
-          pause
-          '@ | Set-Content -Encoding ASCII artifact\LEGACY_HEARTGOLD_STARTER_PROBE.bat
-
-          @'
-          Pokebot Gen4/5 PC v0p1
-
-          1. Run melonDS.exe and boot HeartGold.
-          2. In melonDS load/run lua\pokebot_bridge.lua.
-          3. Run TEST_BRIDGE.bat. It should print a Pokebot-melonDS response.
-          4. For HGSS starters, save at/near Elm's starter machine.
-          5. Open the starter selection screen once and run
-             HEARTGOLD_STARTER_CHECK.bat to verify all three are read.
-          6. Run HEARTGOLD_STARTER_HUNTER.bat for the automatic shiny loop.
-             It checks all three starters before selection and resets if none
-             are shiny. It stops before choosing anything when a shiny appears.
-          7. SCAN_RAM.bat remains available for RAM diagnostics.
+          First test:
+          1. Run Pokebot-Gen45.bat.
+          2. Choose 1 to start melonDS.
+          3. Boot HeartGold Europe v10.
+          4. In melonDS load emulator\lua\pokebot_bridge.lua.
+          5. Return to Pokebot-Gen45.bat and choose 4 to test the bridge.
+          6. Open Elm's starter selection screen and choose 2.
+             It should show Chikorita, Cyndaquil and Totodile without selecting one.
+          7. If correct, choose 3 for the automatic shiny starter hunt.
 
           Target ROM:
           HeartGold Europe v10
           SHA1 EB47AB4BA0326AE842135F62C7EC68CF85C9785F
 
-          This build reads emulated game RAM and injects controller input.
-          It does not write Pokemon/game data.
-          '@ | Set-Content -Encoding ASCII artifact\FIRST_TEST.txt
+          The bot reads emulated RAM and injects inputs. It does not write Pokemon/game data.
+          '@ | Set-Content -Encoding ASCII "$Root\docs\FIRST_TEST.txt"
 
-          (Get-FileHash artifact\melonDS.exe -Algorithm SHA256).Hash |
-            Set-Content artifact\MELONDS_SHA256.txt
+          (Get-FileHash "$Root\emulator\melonDS.exe" -Algorithm SHA256).Hash |
+            Set-Content "$Root\docs\MELONDS_SHA256.txt"
 
-      - name: Smoke-check staged files
+      - name: Smoke-check packaged layout
         run: |
           set -eux
-          test -s artifact/melonDS.exe
-          test -s artifact/lua/pokebot_bridge.lua
-          test -s artifact/pokebot_gen45.py
-          ls -lah artifact
-          find artifact -maxdepth 2 -type f | sort
+          ROOT="artifact/Pokebot-Gen45-PC-HGSS-StarterHunter"
+          test -s "$ROOT/Pokebot-Gen45.bat"
+          test -s "$ROOT/emulator/melonDS.exe"
+          test -s "$ROOT/emulator/lua/pokebot_bridge.lua"
+          test -s "$ROOT/bot/pokebot_gen45.py"
+          test -s "$ROOT/docs/FIRST_TEST.txt"
+          test -d "$ROOT/pokebot_ipc"
+
+          # Keep the top level intentionally clean: one launcher plus folders.
+          test "$(find "$ROOT" -maxdepth 1 -type f | wc -l)" -eq 1
+
+          find "$ROOT" -maxdepth 3 -type f | sort
 
       - name: Upload package
         uses: actions/upload-artifact@v4
