@@ -30,11 +30,16 @@ jobs:
           EOF
           apt-get -o Acquire::Check-Valid-Until=false update
           apt-get -o Acquire::Check-Valid-Until=false install -y gcc python3
-          git --version
-          gcc --version
-          python3 --version
-          make --version
           git config --global safe.directory '*'
+
+      - name: Build pinned New-3DS RTCom microcode
+        run: |
+          git clone https://github.com/shocoman/Analog-Controls-for-NDS-Games-on-3DS.git analog-controls
+          cd analog-controls
+          git checkout 58a5afd55275a565fe7ee0ad40e927df0e7b514e
+          make -C arm7_rtcom_patch checkarm11_ucode EXTERNAL_DEFINES="-DINCLUDE_NEW_3DS_STUFF"
+          test -s arm7_rtcom_patch/arm11_ucode/arm7_rtcom_patch.uc11
+          wc -c arm7_rtcom_patch/arm11_ucode/arm7_rtcom_patch.uc11
 
       - name: Clone pinned nds-bootstrap
         run: |
@@ -44,11 +49,14 @@ jobs:
           git submodule update --init --recursive
           test "$(git rev-parse HEAD)" = "1585a242c80f78fc67cb49a7bfe55a24cc362785"
 
-      - name: Apply Pokebot bridge patch
+      - name: Apply Pokebot v0p2 bridge patch
         run: |
-          python3 nds_bootstrap_pokebot/apply_pokebot_patch.py nds-bootstrap
+          python3 nds_bootstrap_pokebot/apply_pokebot_patch.py             nds-bootstrap             --ucode analog-controls/arm7_rtcom_patch/arm11_ucode/arm7_rtcom_patch.uc11
+
           grep -q "pokebot_bridge_tick" nds-bootstrap/retail/cardengine/arm7/source/cardengine.c
-          grep -q "PB_CMD_READ32" nds-bootstrap/retail/cardengine/arm7/source/pokebot_bridge.c
+          grep -q "pb_read_zlzr" nds-bootstrap/retail/cardengine/arm7/source/pokebot_bridge.c
+          grep -q "pokebot_rtcom_install" nds-bootstrap/retail/bootloader/source/arm7/main.arm7.c
+          grep -q "pokebot_rtcom_ucode" nds-bootstrap/retail/bootloader/source/arm7/pokebot_rtcom_boot.c
 
       - name: Build nds-bootstrap
         working-directory: nds-bootstrap
@@ -56,31 +64,57 @@ jobs:
           gcc lzss.c -o /usr/local/bin/lzss
           make package-nightly
 
-      - name: Package Pokebot test build
+      - name: Report binary sizes
+        run: |
+          arm-none-eabi-size nds-bootstrap/retail/cardengine/arm7/build/cardengine_arm7.elf || true
+          arm-none-eabi-size nds-bootstrap/retail/bootloader/load0.elf || true
+          sha256sum nds-bootstrap/bin/nds-bootstrap-nightly.nds
+
+      - name: Package Pokebot v0p2 test build
         run: |
           mkdir -p artifact/INSTALL/_nds
           cp nds-bootstrap/bin/nds-bootstrap-nightly.nds artifact/INSTALL/_nds/nds-bootstrap-nightly.nds
-          cp nds-bootstrap/bin/nds-bootstrap-nightly.nds artifact/nds-bootstrap-pokebot-v0p1.nds
+          cp nds-bootstrap/bin/nds-bootstrap-nightly.nds artifact/nds-bootstrap-pokebot-v0p2.nds
           cp nds_bootstrap_pokebot/README.md artifact/README.md
           cp nds_bootstrap_pokebot/PROTOCOL.md artifact/PROTOCOL.md
 
           cat > artifact/BUILD_MANIFEST.txt <<'EOF'
-          Pokebot nds-bootstrap proof-of-concept v0p1
+          Pokebot nds-bootstrap proof-of-concept v0p2
           Target: New Nintendo 3DS
           Test game: Pokemon HeartGold (Europe)
           ROM SHA1: EB47AB4BA0326AE842135F62C7EC68CF85C9785F
-          nds-bootstrap upstream commit: 1585a242c80f78fc67cb49a7bfe55a24cc362785
-          Commands implemented on DS side:
+
+          nds-bootstrap upstream:
+            1585a242c80f78fc67cb49a7bfe55a24cc362785
+
+          RTCom/TwlBg source:
+            shocoman/Analog-Controls-for-NDS-Games-on-3DS
+            58a5afd55275a565fe7ee0ad40e927df0e7b514e
+            New-3DS microcode build enabled
+
+          v0p2 hardware proof:
+            nds-bootstrap ARM7 bootloader uploads RTCom microcode
+            RTCom microcode patches TwlBg
+            TwlBg publishes ZL/ZR/Nub through legacy RTC registers
+            cardengine reads ZL state
+            rising ZL edge injects DS A for 3 VBlanks
+
+          DS-side mailbox commands retained:
             0x01 PING
-            0x02 KEY_SET (timed; fail-safe auto release)
+            0x02 KEY_SET
             0x03 RELEASE_ALL
-            0x10 READ32 (0x02000000..0x023FFFFC, aligned, read-only)
-          PC/ARM11 live transport: not yet included in v0p1
+            0x10 READ32 (read-only 0x02000000..0x023FFFFC)
+
+          Safety:
+            RTCom boot install is fail-open
+            no arbitrary game-RAM write command
+            injected buttons retain timed auto-release
+            normal TWiLight Release bootstrap is untouched
           EOF
 
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:
-          name: Pokebot-nds-bootstrap-v0p1
+          name: Pokebot-nds-bootstrap-v0p2
           path: artifact/
           if-no-files-found: error
