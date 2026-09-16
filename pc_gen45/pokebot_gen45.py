@@ -264,11 +264,14 @@ def _reach_hgss_starter_screen(
                 live_base = None
 
             if live_base is None:
-                # At boot/title/continue there is no HGSS runtime anchor yet.
-                # A works for the title just like Start and an 8-frame press is
-                # substantially more reliable than the previous 1-2 frame taps.
-                backend.pulse("A", 8)
-                time.sleep(max(input_interval, 0.035))
+                # Match Pokebot-NDS' proven Gen IV reset progression:
+                # Start -> short wait -> A -> short wait, repeated until the
+                # save/runtime anchor exists. This reliably clears HGSS'
+                # "Touch to Start" title screen, where A alone can stall.
+                backend.pulse("Start", 4)
+                time.sleep(max(input_interval, 0.08))
+                backend.pulse("A", 4)
+                time.sleep(max(input_interval, 0.08))
                 continue
 
             if not loaded_reported:
