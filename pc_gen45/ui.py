@@ -30,6 +30,7 @@ GOOD = "#38d27c"
 WARN = "#f0b45a"
 BAD = "#ff6d7a"
 SHINY = "#ffd85a"
+ANTI = "#c58cff"
 
 STARTER_IDS = (152, 155, 158)
 STARTER_NAMES = {152: "Chikorita", 155: "Cyndaquil", 158: "Totodile"}
@@ -200,8 +201,8 @@ class PokebotUI:
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("Pokebot Gen45 PC")
-        self.root.geometry("1520x900")
-        self.root.minsize(1240, 760)
+        self.root.geometry("1280x800")
+        self.root.minsize(1120, 700)
         self.root.configure(bg=BG)
 
         self.package_root = Path(__file__).resolve().parent.parent
@@ -225,6 +226,7 @@ class PokebotUI:
         self.active_started: float | None = None
         self.phase_elapsed = 0.0
         self.phase_started: float | None = None
+        self.phase_target_seen = 0
 
         self.target_vars = {species: tk.BooleanVar(value=True) for species in STARTER_IDS}
         self.headless_var = tk.BooleanVar(value=True)
@@ -241,6 +243,9 @@ class PokebotUI:
         self.lifetime_seen_var = tk.StringVar(value="0")
         self.lifetime_shinies_var = tk.StringVar(value="0")
         self.lifetime_resets_var = tk.StringVar(value="0")
+        self.effective_rolls_var = tk.StringVar(value="0")
+        self.odds_chance_var = tk.StringVar(value="0.00%")
+        self.odds_eta_var = tk.StringVar(value="--")
 
         self.pages: dict[str, tk.Frame] = {}
         self.nav_buttons: dict[str, tk.Button] = {}
@@ -396,49 +401,46 @@ class PokebotUI:
 
     def _build_shell(self) -> None:
         root = tk.Frame(self.root, bg=BG)
-        root.pack(fill="both", expand=True, padx=12, pady=12)
+        root.pack(fill="both", expand=True, padx=8, pady=8)
 
-        header = self._frame(root, bg="#0f1923")
+        # Gen3-style overlay header: compact, informational, no oversized banner.
+        header = tk.Frame(root, bg="#0d1720")
         header.pack(fill="x")
 
-        left = tk.Frame(header, bg="#0f1923")
-        left.pack(side="left", padx=16, pady=11)
         self._label(
-            left,
+            header,
             "Pokebot Gen45 PC",
-            font=("Segoe UI Semibold", 19),
-            bg="#0f1923",
-        ).pack(anchor="w")
+            font=("Segoe UI Semibold", 13),
+            bg="#0d1720",
+        ).pack(side="left", padx=(10, 8), pady=7)
         self._label(
-            left,
-            "HGSS • native melonDS RAM + controller bridge",
+            header,
+            "HGSS • melonDS native bridge",
             font=("Segoe UI", 8),
             fg=MUTED,
-            bg="#0f1923",
-        ).pack(anchor="w")
+            bg="#0d1720",
+        ).pack(side="left", pady=7)
 
-        right = tk.Frame(header, bg="#0f1923")
-        right.pack(side="right", padx=16, pady=9)
         self.status_badge = tk.Label(
-            right,
+            header,
             textvariable=self.status_var,
             bg=PANEL_2,
             fg=GOOD,
-            font=("Segoe UI Semibold", 9),
-            padx=13,
-            pady=5,
+            font=("Segoe UI Semibold", 8),
+            padx=9,
+            pady=3,
         )
-        self.status_badge.pack(anchor="e")
+        self.status_badge.pack(side="right", padx=(5, 10), pady=5)
         self._label(
-            right,
+            header,
             textvariable=self.bridge_var,
-            font=("Consolas", 8),
+            font=("Consolas", 7),
             fg=MUTED,
-            bg="#0f1923",
-        ).pack(anchor="e", pady=(3, 0))
+            bg="#0d1720",
+        ).pack(side="right", pady=7)
 
         nav = tk.Frame(root, bg=BG)
-        nav.pack(fill="x", pady=(9, 8))
+        nav.pack(fill="x", pady=(5, 5))
         for tab in self.TABS:
             btn = tk.Button(
                 nav,
@@ -450,12 +452,12 @@ class PokebotUI:
                 activeforeground=TEXT,
                 relief="flat",
                 bd=0,
-                padx=14,
-                pady=7,
-                font=("Segoe UI Semibold", 8),
+                padx=10,
+                pady=4,
+                font=("Segoe UI Semibold", 7),
                 cursor="hand2",
             )
-            btn.pack(side="left", padx=(0, 4))
+            btn.pack(side="left", padx=(0, 3))
             self.nav_buttons[tab] = btn
 
         self.page_host = tk.Frame(root, bg=BG)
@@ -464,18 +466,17 @@ class PokebotUI:
         self.status_line = self._label(
             root,
             "Ready. Launch melonDS, load HeartGold, then start the hunt.",
-            font=("Segoe UI", 8),
+            font=("Segoe UI", 7),
             fg=MUTED,
             bg=BG,
             anchor="w",
         )
-        self.status_line.pack(fill="x", pady=(7, 0))
+        self.status_line.pack(fill="x", pady=(4, 0))
 
         for tab in self.TABS:
             frame = tk.Frame(self.page_host, bg=BG)
             frame.place(relx=0, rely=0, relwidth=1, relheight=1)
             self.pages[tab] = frame
-
     def _select_tab(self, tab: str) -> None:
         self.current_tab = tab
         self.pages[tab].tkraise()
@@ -489,107 +490,178 @@ class PokebotUI:
 
     def _build_dashboard(self) -> None:
         page = self.pages["DASHBOARD"]
-        page.grid_columnconfigure(0, weight=7)
-        page.grid_columnconfigure(1, weight=4)
+        page.grid_columnconfigure(0, weight=3)
+        page.grid_columnconfigure(1, weight=5)
+        page.grid_columnconfigure(2, weight=3)
         page.grid_rowconfigure(2, weight=1)
 
+        # -----------------------------------------------------------------
+        # Hunt Control -- compact like Pokebot-Gen3's overlay controls.
+        # -----------------------------------------------------------------
+        control = self._frame(page)
+        control.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
+        self._section_title(control, "HUNT CONTROL", "HGSS").pack(
+            fill="x", padx=9, pady=(7, 4)
+        )
+
+        info = tk.Frame(control, bg=PANEL)
+        info.pack(fill="x", padx=9)
+
+        def info_row(name: str, value: str):
+            row = tk.Frame(info, bg=PANEL_2)
+            row.pack(fill="x", pady=1)
+            self._label(
+                row, name.upper(), font=("Segoe UI Semibold", 7),
+                fg=MUTED, bg=PANEL_2
+            ).pack(side="left", padx=7, pady=4)
+            self._label(
+                row, value, font=("Segoe UI Semibold", 8), bg=PANEL_2
+            ).pack(side="right", padx=7, pady=4)
+
+        info_row("Game", "HeartGold")
+        info_row("Mode", "Starters")
+        info_row("Method", "3 Pokémon / reset")
+
+        self._label(
+            control, "TARGETS", font=("Segoe UI Semibold", 7), fg=MUTED
+        ).pack(anchor="w", padx=10, pady=(6, 1))
+        target_line = tk.Frame(control, bg=PANEL)
+        target_line.pack(fill="x", padx=8)
+        for species in STARTER_IDS:
+            self._check(
+                target_line,
+                STARTER_NAMES[species],
+                self.target_vars[species],
+                bg=PANEL,
+            ).pack(anchor="w")
+
+        option_line = tk.Frame(control, bg=PANEL)
+        option_line.pack(fill="x", padx=8, pady=(4, 1))
+        self._check(option_line, "Headless display", self.headless_var).pack(anchor="w")
+        self._check(option_line, "Mute game audio", self.mute_var).pack(anchor="w")
+
+        actions = tk.Frame(control, bg=PANEL)
+        actions.pack(fill="x", padx=8, pady=(6, 8))
+        self.start_button = self._button(
+            actions, "START", self._start_hunt, accent=True, compact=True
+        )
+        self.start_button.pack(side="left", fill="x", expand=True, padx=(0, 3))
+        self.stop_button = self._button(
+            actions, "STOP", self._stop_hunt, danger=True,
+            compact=True, state="disabled"
+        )
+        self.stop_button.pack(side="left", fill="x", expand=True, padx=(3, 0))
+
+        # -----------------------------------------------------------------
+        # Current Encounter -- one actual encounter card, not 3 empty cards.
+        # -----------------------------------------------------------------
         current = self._frame(page)
-        current.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-        current.grid_columnconfigure(0, weight=1)
-        self._section_title(current, "CURRENT ENCOUNTER", "HGSS three-starter buffer").grid(
-            row=0, column=0, sticky="ew", padx=12, pady=(10, 6)
+        current.grid(row=0, column=1, sticky="nsew", padx=4)
+        self._section_title(current, "CURRENT ENCOUNTER", "Live PK4").pack(
+            fill="x", padx=9, pady=(7, 3)
         )
         self.current_cards_wrap = tk.Frame(current, bg=PANEL)
-        self.current_cards_wrap.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
-        for i in range(3):
-            self.current_cards_wrap.grid_columnconfigure(i, weight=1)
+        self.current_cards_wrap.pack(fill="both", expand=True, padx=8, pady=(0, 7))
 
-        target = self._frame(page)
-        target.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
-        self._section_title(target, "HUNT TARGET", "RAM-authoritative").pack(
-            fill="x", padx=12, pady=(10, 5)
+        # -----------------------------------------------------------------
+        # Shiny Phase -- narrow telemetry panel from Pokebot-Gen3.
+        # -----------------------------------------------------------------
+        phase = self._frame(page)
+        phase.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
+        self._section_title(phase, "SHINY PHASE", "1 / 8,192 per Pokémon").pack(
+            fill="x", padx=9, pady=(7, 3)
         )
 
-        self._label(
-            target,
-            "HeartGold / SoulSilver Starters",
-            font=("Segoe UI Semibold", 12),
-        ).pack(anchor="w", padx=14, pady=(4, 2))
-        self._label(
-            target,
-            "Checks all three starters before selection.",
-            font=("Segoe UI", 8),
-            fg=MUTED,
-        ).pack(anchor="w", padx=14, pady=(0, 7))
+        phase_grid = tk.Frame(phase, bg=PANEL)
+        phase_grid.pack(fill="x", padx=8)
 
-        target_checks = tk.Frame(target, bg=PANEL)
-        target_checks.pack(fill="x", padx=12)
-        for species in STARTER_IDS:
-            row = tk.Frame(target_checks, bg=PANEL_2)
-            row.pack(fill="x", pady=2)
-            shiny = self._sprite(species, True, small=True)
-            img = tk.Label(row, image=shiny, bg=PANEL_2)
-            img.image = shiny
-            img.pack(side="left", padx=(6, 3), pady=2)
-            self._check(row, STARTER_NAMES[species], self.target_vars[species], bg=PANEL_2).pack(
-                side="left", fill="x", expand=True
+        phase_pairs = (
+            ("PHASE SEEN", self.phase_seen_var),
+            ("TIME", self.phase_var),
+            ("ROLLS", self.effective_rolls_var),
+            ("RATE", self.rate_var),
+            ("CHANCE", self.odds_chance_var),
+            ("ETA TO ODDS", self.odds_eta_var),
+        )
+        for idx, (name, var) in enumerate(phase_pairs):
+            cell = tk.Frame(phase_grid, bg=PANEL_2)
+            cell.grid(
+                row=idx // 2, column=idx % 2, sticky="nsew",
+                padx=2, pady=2
             )
+            phase_grid.grid_columnconfigure(idx % 2, weight=1)
+            self._label(
+                cell, name, font=("Segoe UI Semibold", 6),
+                fg=MUTED, bg=PANEL_2
+            ).pack(pady=(4, 0))
+            self._label(
+                cell, textvariable=var, font=("Segoe UI Semibold", 10),
+                bg=PANEL_2
+            ).pack(pady=(0, 4))
 
-        opts = tk.Frame(target, bg=PANEL)
-        opts.pack(fill="x", padx=14, pady=(7, 2))
-        self._check(opts, "Headless display", self.headless_var).pack(anchor="w")
-        self._check(opts, "Mute game audio", self.mute_var).pack(anchor="w")
-
-        actions = tk.Frame(target, bg=PANEL)
-        actions.pack(fill="x", padx=12, pady=(8, 12))
-        self.start_button = self._button(actions, "START HUNT", self._start_hunt, accent=True)
-        self.start_button.pack(side="left", fill="x", expand=True, padx=(0, 4))
-        self.stop_button = self._button(
-            actions, "STOP", self._stop_hunt, danger=True, state="disabled"
+        self.odds_canvas = tk.Canvas(
+            phase, height=12, bg="#0a1118", highlightthickness=0
         )
-        self.stop_button.pack(side="left", fill="x", expand=True, padx=(4, 0))
+        self.odds_canvas.pack(fill="x", padx=10, pady=(7, 1))
+        self.odds_bar_rect = self.odds_canvas.create_rectangle(
+            0, 0, 0, 12, fill=GOOD, outline=""
+        )
+        self.odds_bar_text = self._label(
+            phase, "0 / 8,192 target rolls",
+            font=("Segoe UI", 7), fg=MUTED
+        )
+        self.odds_bar_text.pack(anchor="w", padx=10, pady=(0, 4))
 
-        stats = self._frame(page, highlightbackground="#274050")
-        stats.grid(row=1, column=0, columnspan=2, sticky="ew", pady=10)
-        for i in range(8):
+        self.phase_info = tk.Frame(phase, bg=PANEL)
+        self.phase_info.pack(fill="x", padx=8, pady=(0, 7))
+        self.phase_target_value = self._phase_info_row(
+            "Targets", "Chikorita / Cyndaquil / Totodile"
+        )
+        self.phase_cycle_value = self._phase_info_row(
+            "Last cycle", self.last_cycle_text
+        )
+        self.phase_bridge_value = self._phase_info_row(
+            "Backend", "melonDS UDP :4953"
+        )
+        self.phase_display_value = self._phase_info_row("Display", "ON")
+        self.phase_audio_value = self._phase_info_row("Audio", "ON")
+
+        # -----------------------------------------------------------------
+        # Compact session/lifetime strip.
+        # -----------------------------------------------------------------
+        stats = self._frame(page, highlightbackground="#263b4b")
+        stats.grid(row=1, column=0, columnspan=3, sticky="ew", pady=6)
+        for i in range(6):
             stats.grid_columnconfigure(i, weight=1)
         defs = (
             ("Session Seen", self.session_seen_var),
-            ("Session Resets", self.session_resets_var),
-            ("Session Shinies", self.session_shinies_var),
-            ("Rate", self.rate_var),
-            ("Phase Seen", self.phase_seen_var),
-            ("Phase Time", self.phase_var),
+            ("Resets", self.session_resets_var),
+            ("Shinies", self.session_shinies_var),
+            ("Seen / Hour", self.rate_var),
             ("Lifetime Seen", self.lifetime_seen_var),
             ("Lifetime Shinies", self.lifetime_shinies_var),
         )
         for col, (name, var) in enumerate(defs):
             self._stat_box(stats, name, var, col)
 
-        last_seen = self._frame(page)
-        last_seen.grid(row=2, column=0, sticky="nsew", padx=(0, 6))
-        last_seen.grid_columnconfigure(0, weight=1)
-        last_seen.grid_rowconfigure(1, weight=1)
-        self._section_title(last_seen, "LAST SEEN POKÉMON", "Newest first • max 7").grid(
-            row=0, column=0, sticky="ew", padx=12, pady=(10, 5)
+        # -----------------------------------------------------------------
+        # Encounter Log -- the dominant lower panel, as in Pokebot-Gen3.
+        # -----------------------------------------------------------------
+        encounter_log = self._frame(page)
+        encounter_log.grid(
+            row=2, column=0, columnspan=3, sticky="nsew"
         )
-        self.last_seen_wrap = tk.Frame(last_seen, bg=PANEL)
-        self.last_seen_wrap.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
-
-        phase = self._frame(page)
-        phase.grid(row=2, column=1, sticky="nsew", padx=(6, 0))
-        self._section_title(phase, "SHINY PHASE", "Current session").pack(
-            fill="x", padx=12, pady=(10, 6)
+        encounter_log.grid_columnconfigure(0, weight=1)
+        encounter_log.grid_rowconfigure(1, weight=1)
+        self._section_title(
+            encounter_log,
+            "ENCOUNTER LOG",
+            "Newest first • live session history"
+        ).grid(row=0, column=0, sticky="ew", padx=9, pady=(7, 3))
+        self.last_seen_wrap = tk.Frame(encounter_log, bg=PANEL)
+        self.last_seen_wrap.grid(
+            row=1, column=0, sticky="nsew", padx=7, pady=(0, 7)
         )
-        self.phase_info = tk.Frame(phase, bg=PANEL)
-        self.phase_info.pack(fill="both", expand=True, padx=12, pady=(0, 10))
-        self._phase_info_row("Mode", "HGSS Starters")
-        self.phase_target_value = self._phase_info_row("Targets", "Chikorita / Cyndaquil / Totodile")
-        self.phase_cycle_value = self._phase_info_row("Last cycle", self.last_cycle_text)
-        self.phase_bridge_value = self._phase_info_row("Backend", "melonDS native UDP :4953")
-        self.phase_display_value = self._phase_info_row("Display", "Headless when hunting")
-        self.phase_audio_value = self._phase_info_row("Audio", "Muted when hunting")
-
     def _phase_info_row(self, name: str, value: str):
         row = tk.Frame(self.phase_info, bg=PANEL_2)
         row.pack(fill="x", pady=2)
@@ -603,111 +675,173 @@ class PokebotUI:
     def _render_current(self, mons: list[dict] | None = None) -> None:
         if mons is not None:
             self.current_mons = mons
+
         for child in self.current_cards_wrap.winfo_children():
             child.destroy()
 
-        rows = self.current_mons
-        if not rows:
-            for idx, species in enumerate(STARTER_IDS):
-                card = self._frame(
-                    self.current_cards_wrap,
-                    bg=PANEL_2,
-                    highlightbackground="#274050",
-                )
-                card.grid(row=0, column=idx, sticky="nsew", padx=4)
-                img = self._sprite(species, False)
-                label = tk.Label(card, image=img, bg=PANEL_2)
-                label.image = img
-                label.pack(pady=(8, 2))
-                self._label(
-                    card,
-                    STARTER_NAMES[species],
-                    font=("Segoe UI Semibold", 10),
-                    bg=PANEL_2,
-                ).pack()
-                self._label(
-                    card,
-                    "Waiting for live PK4",
-                    font=("Segoe UI", 8),
-                    fg=MUTED,
-                    bg=PANEL_2,
-                ).pack(pady=(2, 9))
+        if not self.current_mons:
+            wait = tk.Frame(self.current_cards_wrap, bg=PANEL_2)
+            wait.pack(fill="both", expand=True)
+            self._label(
+                wait, "Waiting for encounter",
+                font=("Segoe UI Semibold", 13), bg=PANEL_2
+            ).pack(pady=(28, 3))
+            self._label(
+                wait,
+                "The latest RAM-valid PK4 will appear here.",
+                font=("Segoe UI", 8), fg=MUTED, bg=PANEL_2
+            ).pack()
+            mini = tk.Frame(wait, bg=PANEL_2)
+            mini.pack(pady=10)
+            for species in STARTER_IDS:
+                img = self._sprite(species, False, small=True)
+                lab = tk.Label(mini, image=img, bg=PANEL_2)
+                lab.image = img
+                lab.pack(side="left", padx=5)
             return
 
-        for idx, mon in enumerate(rows[:3]):
-            shiny = bool(mon.get("shiny"))
-            card = self._frame(
-                self.current_cards_wrap,
-                bg=PANEL_2,
-                highlightbackground=SHINY if shiny else BORDER,
-                highlightthickness=2 if shiny else 1,
+        # Gen3 overlay semantics: one current encounter hero. For HGSS starter
+        # sets, show the final decoded member while retaining the full set
+        # as compact mini sprites below.
+        mon = self.current_mons[-1]
+        shiny = bool(mon.get("shiny"))
+        hero = tk.Frame(
+            self.current_cards_wrap,
+            bg=PANEL_2,
+            highlightthickness=2 if shiny else 0,
+            highlightbackground=SHINY,
+        )
+        hero.pack(fill="both", expand=True)
+
+        left = tk.Frame(hero, bg=PANEL_2, width=120)
+        left.pack(side="left", fill="y", padx=(7, 5), pady=7)
+        img = self._sprite(int(mon["species"]), shiny)
+        sprite = tk.Label(left, image=img, bg=PANEL_2)
+        sprite.image = img
+        sprite.pack()
+
+        self._label(
+            left,
+            ("★ " if shiny else "") + str(mon.get("name", "Pokémon")),
+            font=("Segoe UI Semibold", 11),
+            fg=SHINY if shiny else TEXT,
+            bg=PANEL_2,
+        ).pack()
+
+        set_strip = tk.Frame(left, bg=PANEL_2)
+        set_strip.pack(pady=(6, 0))
+        for set_mon in self.current_mons[:3]:
+            set_img = self._sprite(
+                int(set_mon["species"]), bool(set_mon.get("shiny")), small=True
             )
-            card.grid(row=0, column=idx, sticky="nsew", padx=4)
+            set_lab = tk.Label(set_strip, image=set_img, bg=PANEL_2)
+            set_lab.image = set_img
+            set_lab.pack(side="left", padx=1)
 
-            img = self._sprite(int(mon["species"]), shiny)
-            label = tk.Label(card, image=img, bg=PANEL_2)
-            label.image = img
-            label.pack(pady=(7, 0))
+        right = tk.Frame(hero, bg=PANEL_2)
+        right.pack(side="left", fill="both", expand=True, padx=(3, 8), pady=7)
 
-            name = ("★ " if shiny else "") + str(mon["name"])
+        meta = tk.Frame(right, bg=PANEL_2)
+        meta.pack(fill="x")
+        meta_pairs = (
+            ("PID", mon.get("pid", "-")),
+            ("Nature", mon.get("nature", "-")),
+            ("Ability", str(mon.get("ability", "-"))),
+            ("Hidden Power", mon.get("hidden_power", "-")),
+            ("SV", str(mon.get("sv", "-"))),
+        )
+        for idx, (name, value) in enumerate(meta_pairs):
+            cell = tk.Frame(meta, bg="#152431")
+            cell.grid(row=idx // 3, column=idx % 3, sticky="ew", padx=2, pady=2)
+            meta.grid_columnconfigure(idx % 3, weight=1)
             self._label(
-                card,
-                name,
-                font=("Segoe UI Semibold", 11),
-                fg=SHINY if shiny else TEXT,
-                bg=PANEL_2,
-            ).pack()
+                cell, name.upper(), font=("Segoe UI Semibold", 6),
+                fg=MUTED, bg="#152431"
+            ).pack(pady=(3, 0))
+            value_fg = TEXT
+            if name == "SV":
+                sv = int(mon.get("sv", 99999))
+                if sv < 8:
+                    value_fg = GOOD
+                elif sv >= 65528:
+                    value_fg = ANTI
+            self._label(
+                cell, str(value), font=("Consolas", 8),
+                fg=value_fg, bg="#152431"
+            ).pack(pady=(0, 3))
 
-            ivs = "/".join(str(x) for x in mon.get("ivs", []))
-            details = [
-                f"PID {mon.get('pid', '-')}",
-                f"SV {mon.get('sv', '-')}",
-                f"{mon.get('nature', '-')}  •  Ability {mon.get('ability', '-')}",
-                f"IVs {ivs}",
-                f"Hidden Power {mon.get('hidden_power', '-')}",
-            ]
-            for line in details:
-                self._label(
-                    card,
-                    line,
-                    font=("Consolas", 8),
-                    fg=MUTED,
-                    bg=PANEL_2,
-                ).pack()
-            tk.Frame(card, bg=PANEL_2, height=7).pack()
+        self._label(
+            right, "IVS", font=("Segoe UI Semibold", 7),
+            fg=MUTED, bg=PANEL_2
+        ).pack(anchor="w", pady=(5, 1))
 
+        ivrow = tk.Frame(right, bg=PANEL_2)
+        ivrow.pack(fill="x")
+        names = ("HP", "ATK", "DEF", "SPA", "SPD", "SPE")
+        ivs = list(mon.get("ivs", []))
+        while len(ivs) < 6:
+            ivs.append(0)
+        for idx, (name, value) in enumerate(zip(names, ivs[:6])):
+            cell = tk.Frame(ivrow, bg="#152431")
+            cell.grid(row=0, column=idx, sticky="ew", padx=2)
+            ivrow.grid_columnconfigure(idx, weight=1)
+            self._label(
+                cell, name, font=("Segoe UI Semibold", 6),
+                fg=MUTED, bg="#152431"
+            ).pack(pady=(3, 0))
+            iv_fg = GOOD if value == 31 else (BAD if value == 0 else TEXT)
+            self._label(
+                cell, str(value), font=("Consolas", 11),
+                fg=iv_fg, bg="#152431"
+            ).pack(pady=(0, 3))
+
+        foot = tk.Frame(right, bg=PANEL_2)
+        foot.pack(fill="x", pady=(5, 0))
+        self._label(
+            foot, f"IV SUM  {sum(ivs[:6])}",
+            font=("Consolas", 8), fg=BORDER, bg=PANEL_2
+        ).pack(side="left")
+        self._label(
+            foot, "RAM VALID",
+            font=("Segoe UI Semibold", 7), fg=GOOD, bg=PANEL_2
+        ).pack(side="right")
     def _render_last_seen(self) -> None:
         for child in self.last_seen_wrap.winfo_children():
             child.destroy()
 
-        headers = ("", "POKÉMON", "HP", "ATK", "DEF", "SPA", "SPD", "SPE", "SUM", "SV")
-        widths = (4, 16, 5, 5, 5, 5, 5, 5, 6, 7)
-        head = tk.Frame(self.last_seen_wrap, bg="#0e1822")
+        headers = (
+            "", "POKÉMON", "NATURE", "HP", "ATK", "DEF",
+            "SPA", "SPD", "SPE", "SUM", "SV", "RESULT"
+        )
+        widths = (4, 14, 10, 4, 4, 4, 4, 4, 4, 5, 7, 8)
+        head = tk.Frame(self.last_seen_wrap, bg="#0a141d")
         head.pack(fill="x")
         for col, (name, width) in enumerate(zip(headers, widths)):
             self._label(
                 head,
                 name,
-                font=("Segoe UI Semibold", 7),
+                font=("Segoe UI Semibold", 6),
                 fg=MUTED,
-                bg="#0e1822",
+                bg="#0a141d",
                 width=width,
-                anchor="center" if col != 1 else "w",
-            ).grid(row=0, column=col, padx=1, pady=4)
+                anchor="center" if col not in (1, 2) else "w",
+            ).grid(row=0, column=col, padx=1, pady=3)
 
-        recent = self.stats.snapshot().get("recently_seen", [])[:7]
+        recent = self.stats.snapshot().get("recently_seen", [])[:8]
         if not recent:
             self._label(
                 self.last_seen_wrap,
-                "No Pokémon recorded yet.",
-                font=("Segoe UI", 9),
+                "No encounters yet.",
+                font=("Segoe UI", 8),
                 fg=MUTED,
                 bg=PANEL,
-            ).pack(anchor="w", padx=8, pady=16)
+            ).pack(anchor="w", padx=7, pady=12)
             return
 
         for mon in recent:
             shiny = bool(mon.get("shiny"))
+            sv = int(mon.get("sv", 99999))
+            anti = sv >= 65528
             row = tk.Frame(
                 self.last_seen_wrap,
                 bg=PANEL_2,
@@ -717,61 +851,90 @@ class PokebotUI:
             row.pack(fill="x", pady=1)
 
             img = self._sprite(int(mon["species"]), shiny, small=True)
-            lab = tk.Label(row, image=img, bg=PANEL_2, width=40)
+            lab = tk.Label(row, image=img, bg=PANEL_2, width=34)
             lab.image = img
-            lab.grid(row=0, column=0, padx=1, pady=1)
+            lab.grid(row=0, column=0, padx=1, pady=0)
 
             self._label(
                 row,
                 ("★ " if shiny else "") + str(mon.get("name", mon["species"])),
-                font=("Segoe UI Semibold", 8),
+                font=("Segoe UI Semibold", 7),
                 fg=SHINY if shiny else TEXT,
                 bg=PANEL_2,
-                width=16,
+                width=14,
                 anchor="w",
             ).grid(row=0, column=1, padx=1)
+
+            self._label(
+                row,
+                str(mon.get("nature", "-")),
+                font=("Segoe UI", 7),
+                fg=MUTED,
+                bg=PANEL_2,
+                width=10,
+                anchor="w",
+            ).grid(row=0, column=2, padx=1)
 
             ivs = list(mon.get("ivs", []))
             while len(ivs) < 6:
                 ivs.append(0)
+
             for i, val in enumerate(ivs[:6]):
-                iv_fg = GOOD if val == 31 else (WARN if val >= 25 else TEXT)
+                iv_fg = GOOD if val == 31 else (BAD if val == 0 else TEXT)
                 self._label(
                     row,
                     str(val),
-                    font=("Consolas", 8),
+                    font=("Consolas", 7),
                     fg=iv_fg,
                     bg=PANEL_2,
-                    width=5,
-                ).grid(row=0, column=2 + i, padx=1)
+                    width=4,
+                ).grid(row=0, column=3 + i, padx=1)
 
             self._label(
                 row,
                 str(sum(ivs[:6])),
-                font=("Consolas", 8),
+                font=("Consolas", 7),
                 fg=BORDER,
                 bg=PANEL_2,
-                width=6,
-            ).grid(row=0, column=8, padx=1)
+                width=5,
+            ).grid(row=0, column=9, padx=1)
+
+            sv_fg = GOOD if shiny else (ANTI if anti else TEXT)
             self._label(
                 row,
                 str(mon.get("sv", "-")),
-                font=("Consolas", 8),
-                fg=SHINY if shiny else TEXT,
+                font=("Consolas", 7),
+                fg=sv_fg,
                 bg=PANEL_2,
                 width=7,
-            ).grid(row=0, column=9, padx=1)
+            ).grid(row=0, column=10, padx=1)
+
+            result = "SHINY" if shiny else ("ANTI" if anti else "NORMAL")
+            result_fg = SHINY if shiny else (ANTI if anti else MUTED)
+            self._label(
+                row,
+                result,
+                font=("Segoe UI Semibold", 6),
+                fg=result_fg,
+                bg=PANEL_2,
+                width=8,
+            ).grid(row=0, column=11, padx=1)
 
             tooltip = (
-                f"{mon.get('name', '')} | {mon.get('nature', '-')} | PID {mon.get('pid', '-')} | "
+                f"{mon.get('name', '')} | PID {mon.get('pid', '-')} | "
+                f"{mon.get('nature', '-')} | Ability {mon.get('ability', '-')} | "
                 f"IVs {'/'.join(map(str, ivs[:6]))} | SUM {sum(ivs[:6])} | "
                 f"SV {mon.get('sv', '-')} | HP {mon.get('hidden_power', '-')}"
             )
-            row.bind("<Enter>", lambda _e, t=tooltip: self.status_line.configure(text=t))
-            row.bind("<Leave>", lambda _e: self.status_line.configure(text="Ready."))
-
-    # ---------- hunts page ----------
-
+            for widget in row.winfo_children():
+                widget.bind(
+                    "<Enter>",
+                    lambda _e, t=tooltip: self.status_line.configure(text=t),
+                )
+                widget.bind(
+                    "<Leave>",
+                    lambda _e: self.status_line.configure(text="Ready."),
+                )
     def _build_hunts(self) -> None:
         page = self.pages["HUNTS"]
         page.grid_columnconfigure(0, weight=1)
@@ -1237,6 +1400,11 @@ class PokebotUI:
         elif kind == "set":
             mons = event["mons"]
             self.stats.record_set(mons)
+            self.phase_target_seen += sum(
+                1 for mon in mons
+                if int(mon.get("species", 0)) in self.target_vars
+                and self.target_vars[int(mon.get("species", 0))].get()
+            )
             self.last_cycle_text = (
                 f"{event['seconds']:.2f}s • {event['address']} • {event['source']}"
             )
@@ -1305,7 +1473,6 @@ class PokebotUI:
         self.session_seen_var.set(str(session["seen"]))
         self.session_resets_var.set(str(session["resets"]))
         self.session_shinies_var.set(str(session["shinies"]))
-        self.phase_seen_var.set(str(session["seen"]))
         self.lifetime_seen_var.set(str(lifetime["seen"]))
         self.lifetime_shinies_var.set(str(lifetime["shinies"]))
         self.lifetime_resets_var.set(str(lifetime["resets"]))
@@ -1320,13 +1487,41 @@ class PokebotUI:
         if self.phase_started is not None:
             phase += now - self.phase_started
 
-        seen = int(self.stats.snapshot()["session"]["seen"])
+        session = self.stats.snapshot()["session"]
+        seen = int(session["seen"])
         rate = seen / (max(1.0, active) / 3600.0) if active > 0 else 0.0
         self.rate_var.set(f"{rate:.1f} / hr")
         self.phase_var.set(_fmt_duration(phase))
 
-        self.root.after(1000, self._tick)
+        # Standard Gen-IV shiny roll: 1/8192 per eligible Pokémon.
+        rolls = int(self.phase_target_seen)
+        self.phase_seen_var.set(str(rolls))
+        self.effective_rolls_var.set(str(rolls))
+        chance = 1.0 - ((8191.0 / 8192.0) ** rolls)
+        self.odds_chance_var.set(f"{chance * 100.0:.2f}%")
 
+        selected_count = sum(1 for var in self.target_vars.values() if var.get())
+        target_rate = 0.0
+        if active > 0 and selected_count > 0:
+            target_rate = rolls / (active / 3600.0)
+        remaining = max(0, 8192 - rolls)
+        if remaining == 0:
+            eta = "AT ODDS"
+        elif target_rate > 0:
+            eta = _fmt_duration((remaining / target_rate) * 3600.0)
+        else:
+            eta = "--"
+        self.odds_eta_var.set(eta)
+
+        if hasattr(self, "odds_canvas"):
+            width = max(1, self.odds_canvas.winfo_width())
+            progress = min(1.0, rolls / 8192.0)
+            self.odds_canvas.coords(self.odds_bar_rect, 0, 0, width * progress, 12)
+            self.odds_bar_text.configure(
+                text=f"{rolls:,} / 8,192 target rolls • {chance * 100.0:.2f}% chance"
+            )
+
+        self.root.after(1000, self._tick)
     def _poll_events(self) -> None:
         try:
             while True:
