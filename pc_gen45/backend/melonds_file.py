@@ -3,19 +3,23 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import time
-from typing import Iterable
 
 from .backend import EmulatorBackend
 
 
 class MelonDSFileBackend(EmulatorBackend):
     """
-    Localhost-style IPC without sockets.
+    Local file IPC between Python and the in-process melonDS Lua bridge.
 
-    Python writes one small command file atomically; melonDS Lua services it on
+    Python writes one small command file atomically; melonDS services it on
     the next emulated frame and writes a response file. Bulk reads are binary,
     so a full 4 MiB DS RAM snapshot does not get hex-expanded.
     """
+
+    VALID_KEYS = {
+        "A", "B", "X", "Y", "Left", "Right", "Up", "Down",
+        "L", "R", "Select", "Start",
+    }
 
     def __init__(self, ipc_dir: str | os.PathLike[str], *, timeout: float = 5.0):
         self.ipc_dir = Path(ipc_dir)
@@ -82,6 +86,13 @@ class MelonDSFileBackend(EmulatorBackend):
             "Make sure pokebot_bridge.lua is running and the IPC folder matches."
         )
 
+    @classmethod
+    def _key(cls, key: str) -> str:
+        for valid in cls.VALID_KEYS:
+            if valid.lower() == key.lower():
+                return valid
+        raise ValueError(f"unknown DS key: {key!r}")
+
     def ping(self) -> str:
         header, _ = self._request("PING")
         return header[2] if len(header) > 2 else "Pokebot-melonDS"
@@ -95,15 +106,23 @@ class MelonDSFileBackend(EmulatorBackend):
         return payload
 
     def set_key(self, key: str, pressed: bool) -> None:
-        self._request("KEY", key, 1 if pressed else 0)
+        self._request("KEY", self._key(key), 1 if pressed else 0)
 
     def pulse(self, key: str, frames: int = 2) -> None:
         if not (1 <= frames <= 600):
             raise ValueError("pulse frames must be 1..600")
-        self._request("PULSE", key, frames)
+        self._request("PULSE", self._key(key), frames)
 
     def reset_input(self) -> None:
         self._request("RELEASE_ALL")
+
+    def touch(self, x: int, y: int) -> None:
+        if not (0 <= x <= 255 and 0 <= y <= 191):
+            raise ValueError("touch coordinates must be x=0..255, y=0..191")
+        self._request("TOUCH", x, y)
+
+    def release_touch(self) -> None:
+        self._request("TOUCH_RELEASE")
 
     def reset_game(self) -> None:
         self._request("RESET")
