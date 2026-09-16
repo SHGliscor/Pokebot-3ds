@@ -11,6 +11,7 @@ from typing import Any
 APP_FOLDER = "Pokebot-Gen45-PC"
 STATS_FILE = "stats.json"
 MAX_RECENT = 30
+MAX_RECENT_SHINIES = 20
 
 
 def _now_iso() -> str:
@@ -45,6 +46,10 @@ class StatsStore:
                 "shinies": 0,
                 "resets": 0,
                 "hunts_started": 0,
+                "best_iv_sum": None,
+                "worst_iv_sum": None,
+                "best_sv": None,
+                "worst_sv": None,
             },
             "session": {
                 "started_at": _now_iso(),
@@ -52,9 +57,14 @@ class StatsStore:
                 "shinies": 0,
                 "resets": 0,
                 "sets": 0,
+                "best_iv_sum": None,
+                "worst_iv_sum": None,
+                "best_sv": None,
+                "worst_sv": None,
             },
             "last_hunt": None,
             "recently_seen": [],
+            "recent_shinies": [],
         }
 
     def _load(self) -> dict[str, Any]:
@@ -80,17 +90,34 @@ class StatsStore:
         if not isinstance(session, dict):
             session = {}
 
-        default["lifetime"].update({
-            key: int(lifetime.get(key, 0) or 0)
-            for key in default["lifetime"]
-        })
-        default["session"].update({
-            key: session.get(key, default["session"][key])
-            for key in default["session"]
-        })
+        for key in ("seen", "shinies", "resets", "hunts_started"):
+            default["lifetime"][key] = int(lifetime.get(key, 0) or 0)
+        for key in ("best_iv_sum", "worst_iv_sum", "best_sv", "worst_sv"):
+            value = lifetime.get(key)
+            default["lifetime"][key] = int(value) if value is not None else None
+
+        default["session"]["started_at"] = session.get(
+            "started_at", default["session"]["started_at"]
+        )
+        for key in ("seen", "shinies", "resets", "sets"):
+            default["session"][key] = int(session.get(key, 0) or 0)
+        for key in ("best_iv_sum", "worst_iv_sum", "best_sv", "worst_sv"):
+            value = session.get(key)
+            default["session"][key] = int(value) if value is not None else None
+
         recent = loaded.get("recently_seen", [])
         if isinstance(recent, list):
             default["recently_seen"] = recent[:MAX_RECENT]
+
+        recent_shinies = loaded.get("recent_shinies")
+        if isinstance(recent_shinies, list):
+            default["recent_shinies"] = recent_shinies[:MAX_RECENT_SHINIES]
+        else:
+            # Migration for builds that only stored a rolling encounter list.
+            default["recent_shinies"] = [
+                mon for mon in default["recently_seen"] if mon.get("shiny")
+            ][:MAX_RECENT_SHINIES]
+
         default["last_hunt"] = loaded.get("last_hunt")
         return default
 
@@ -109,6 +136,10 @@ class StatsStore:
                 "shinies": 0,
                 "resets": 0,
                 "sets": 0,
+                "best_iv_sum": None,
+                "worst_iv_sum": None,
+                "best_sv": None,
+                "worst_sv": None,
             }
             self.save()
 
@@ -131,13 +162,37 @@ class StatsStore:
             self.data["session"]["shinies"] += shiny_count
             self.data["lifetime"]["shinies"] += shiny_count
 
-            recent = self.data.setdefault("recently_seen", [])
             for mon in mons:
-                recent.insert(0, {
+                ivs = mon.get("ivs") or []
+                if len(ivs) >= 6:
+                    iv_sum = sum(int(v) for v in ivs[:6])
+                    for scope in ("session", "lifetime"):
+                        best = self.data[scope].get("best_iv_sum")
+                        worst = self.data[scope].get("worst_iv_sum")
+                        self.data[scope]["best_iv_sum"] = iv_sum if best is None else max(best, iv_sum)
+                        self.data[scope]["worst_iv_sum"] = iv_sum if worst is None else min(worst, iv_sum)
+
+                if mon.get("sv") is not None:
+                    sv = int(mon["sv"])
+                    for scope in ("session", "lifetime"):
+                        best = self.data[scope].get("best_sv")
+                        worst = self.data[scope].get("worst_sv")
+                        # Smaller SV is closer to the Gen-IV shiny threshold (<8).
+                        self.data[scope]["best_sv"] = sv if best is None else min(best, sv)
+                        self.data[scope]["worst_sv"] = sv if worst is None else max(worst, sv)
+
+            recent = self.data.setdefault("recently_seen", [])
+            recent_shinies = self.data.setdefault("recent_shinies", [])
+            for mon in mons:
+                stamped = {
                     **mon,
                     "seen_at": _now_iso(),
-                })
+                }
+                recent.insert(0, stamped)
+                if mon.get("shiny"):
+                    recent_shinies.insert(0, stamped)
             del recent[MAX_RECENT:]
+            del recent_shinies[MAX_RECENT_SHINIES:]
             self.save()
 
     def record_reset(self) -> None:
