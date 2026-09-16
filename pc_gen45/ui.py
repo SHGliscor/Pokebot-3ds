@@ -14,6 +14,7 @@ from pokebot_gen45 import (
     _reach_hgss_starter_screen,
     _sound_target,
     _starter_set_identity,
+    load_ability_names,
     load_species_names,
 )
 from stats_store import StatsStore
@@ -45,14 +46,15 @@ def _fmt_duration(seconds: float) -> str:
     return f"{m:02d}:{s:02d}"
 
 
-def _mon_dict(mon, names: dict[int, str]) -> dict:
+def _mon_dict(mon, names: dict[int, str], abilities: dict[int, str]) -> dict:
     return {
         "species": mon.species,
         "name": names.get(mon.species, f"Species {mon.species}"),
         "pid": f"{mon.pid:08X}",
         "sv": mon.shiny_value,
         "nature": mon.nature,
-        "ability": mon.ability,
+        "ability": abilities.get(mon.ability, f"Ability {mon.ability}"),
+        "ability_id": mon.ability,
         "ivs": list(mon.ivs),
         "hidden_power": f"{mon.hidden_power_type}/{mon.hidden_power_power}",
         "shiny": bool(mon.shiny),
@@ -76,6 +78,7 @@ class StarterHuntWorker(threading.Thread):
         self.headless = headless
         self.mute_audio = mute_audio
         self.names = load_species_names()
+        self.abilities = load_ability_names()
 
     def emit(self, kind: str, **payload) -> None:
         self.events.put({"type": kind, **payload})
@@ -137,7 +140,7 @@ class StarterHuntWorker(threading.Thread):
                 else:
                     duplicate_streak = 0
                     seen_sets.add(identity)
-                    mon_rows = [_mon_dict(mon, self.names) for mon in mons]
+                    mon_rows = [_mon_dict(mon, self.names, self.abilities) for mon in mons]
                     self.emit(
                         "set",
                         mons=mon_rows,
@@ -160,7 +163,7 @@ class StarterHuntWorker(threading.Thread):
                             audio_disabled = False
                         self.emit(
                             "target",
-                            mons=[_mon_dict(mon, self.names) for mon in targets],
+                            mons=[_mon_dict(mon, self.names, self.abilities) for mon in targets],
                         )
                         _sound_target()
                         return
