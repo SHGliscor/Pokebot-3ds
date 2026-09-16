@@ -9,6 +9,7 @@ import sys
 import time
 
 from backend.melonds_file import MelonDSFileBackend
+from backend.melonds_udp import MelonDSUDPBackend
 from gen4.pk4 import PARTY_SIZE, parse_pk4, scan_pk4, newly_seen
 
 MAIN_RAM_BASE = 0x02000000
@@ -44,14 +45,20 @@ def mon_line(mon, names: dict[int, str]) -> str:
     )
 
 
+def make_backend(args):
+    if args.backend == "file":
+        return MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    return MelonDSUDPBackend(args.host, args.port, timeout=max(0.25, args.timeout))
+
+
 def cmd_ping(args) -> int:
-    backend = MelonDSFileBackend(args.ipc)
+    backend = make_backend(args)
     print("PING:", backend.ping())
     return 0
 
 
 def cmd_input_test(args) -> int:
-    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    backend = make_backend(args)
     key = args.key
     print(f"Sending {key} for {args.frames} frame(s).")
     print("Keep melonDS UNFOCUSED while this runs.")
@@ -61,7 +68,7 @@ def cmd_input_test(args) -> int:
 
 
 def cmd_scan(args) -> int:
-    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    backend = make_backend(args)
     names = load_species_names()
     print("Reading 4 MiB ARM9 main RAM...")
     ram = backend.read_block(MAIN_RAM_BASE, MAIN_RAM_SIZE)
@@ -268,7 +275,7 @@ def _reach_hgss_starter_screen(
 
 
 def cmd_hgss_starter_check(args) -> int:
-    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    backend = make_backend(args)
     names = load_species_names()
     mons, base, source = _locate_hgss_starters(
         backend, int(args.base, 0), allow_full_scan=True
@@ -289,7 +296,7 @@ def cmd_hgss_starter_check(args) -> int:
 
 
 def cmd_hgss_starter_hunt(args) -> int:
-    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    backend = make_backend(args)
     names = load_species_names()
     base_hint = int(args.base, 0)
 
@@ -400,7 +407,7 @@ def cmd_hgss_starter_hunt(args) -> int:
 
 
 def cmd_starter_probe(args) -> int:
-    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    backend = make_backend(args)
     names = load_species_names()
 
     print("Taking BEFORE snapshot...")
@@ -465,8 +472,11 @@ def cmd_hash(args) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Pokebot Gen4/5 PC melonDS proof")
-    p.add_argument("--ipc", default="pokebot_ipc", help="IPC directory shared with melonDS Lua")
-    p.add_argument("--timeout", type=float, default=10.0)
+    p.add_argument("--backend", choices=["native", "file"], default="native")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=4953)
+    p.add_argument("--ipc", default="pokebot_ipc", help="Legacy file/Lua IPC directory")
+    p.add_argument("--timeout", type=float, default=2.0)
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("ping")
