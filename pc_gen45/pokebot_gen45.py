@@ -32,7 +32,15 @@ def load_species_names() -> dict[int, str]:
     return {int(k): str(v) for k, v in obj.items()}
 
 
-def mon_line(mon, names: dict[int, str]) -> str:
+def load_ability_names() -> dict[int, str]:
+    path = Path(__file__).with_name("data") / "abilities_gen4.json"
+    if not path.exists():
+        return {}
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    return {int(k): str(v) for k, v in obj.items()}
+
+
+def mon_line(mon, names: dict[int, str], abilities: dict[int, str] | None = None) -> str:
     name = names.get(mon.species, f"Species {mon.species}")
     ivs = "/".join(map(str, mon.ivs))
     shiny = " SHINY" if mon.shiny else ""
@@ -40,7 +48,7 @@ def mon_line(mon, names: dict[int, str]) -> str:
     return (
         f"0x{mon.address:08X} {name}{level}{shiny} "
         f"PID={mon.pid:08X} SV={mon.shiny_value} "
-        f"Nature={mon.nature} Ability={mon.ability} IVs={ivs} "
+        f"Nature={mon.nature} Ability={(abilities or {}).get(mon.ability, mon.ability)} IVs={ivs} "
         f"HP={mon.hidden_power_type}/{mon.hidden_power_power}"
     )
 
