@@ -118,6 +118,13 @@ local function process_command()
             return
         end
 
+        if cmd == "FAST_FORWARD" then
+            local enabled = tonumber(parts[3]) == 1
+            emu.setFastForward(enabled)
+            respond(seq, {"FAST_FORWARD", enabled and 1 or 0})
+            return
+        end
+
         if cmd == "RELEASE_ALL" then
             pulses = {}
             emu.resetInput()
@@ -128,6 +135,7 @@ local function process_command()
         if cmd == "RESET" then
             pulses = {}
             emu.resetInput()
+            emu.setFastForward(false)
             emu.reset()
             respond(seq, {"RESET"})
             return
