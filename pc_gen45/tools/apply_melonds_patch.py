@@ -18,6 +18,7 @@ def replace_once(path: Path, old: str, new: str) -> None:
 cpp = ROOT / "src/frontend/qt_sdl/ScriptManager.cpp"
 mem = ROOT / "lua/core/memory.lua"
 sol = ROOT / "sol/sol.hpp"
+cmake_qt = ROOT / "src/frontend/qt_sdl/CMakeLists.txt"
 
 replace_once(
     cpp,
@@ -85,4 +86,16 @@ replace_once(
 """,
 )
 
-print("Applied Pokebot melonDS bulk-read + sol2 compiler compatibility patches")
+replace_once(
+    cmake_qt,
+    """target_link_libraries(melonDS PRIVATE ${QT_LINK_LIBS} ${CMAKE_DL_LIBS} dl m)
+""",
+    """if (WIN32)
+    target_link_libraries(melonDS PRIVATE ${QT_LINK_LIBS} m)
+else()
+    target_link_libraries(melonDS PRIVATE ${QT_LINK_LIBS} ${CMAKE_DL_LIBS} dl m)
+endif()
+""",
+)
+
+print("Applied Pokebot melonDS RAM, sol2 compiler, and Windows linker compatibility patches")
