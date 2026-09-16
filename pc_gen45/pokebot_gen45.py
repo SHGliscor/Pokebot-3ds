@@ -250,12 +250,14 @@ def _reach_hgss_starter_screen(
 
     fast_forward_enabled = False
     try:
-        # Fast-forward is useful for logo/title/loading, but we intentionally
-        # return to normal speed before using the fine starter-carousel guard.
-        backend.set_fast_forward(True)
-        fast_forward_enabled = True
+        # Do not fast-forward the HGSS title/continue input phase. A 4-frame
+        # pulse at 1000 FPS is only a few milliseconds in real time and proved
+        # intermittent at "Touch to Start". Keep title input at normal speed
+        # and reproduce a physical DS-style press/release cadence instead.
+        backend.set_fast_forward(False)
 
         loaded_reported = False
+        boot_input_cycle = 0
 
         while time.monotonic() < deadline:
             try:
@@ -264,27 +266,27 @@ def _reach_hgss_starter_screen(
                 live_base = None
 
             if live_base is None:
-                # Match Pokebot-NDS' proven Gen IV reset progression:
-                # Start -> short wait -> A -> short wait, repeated until the
-                # save/runtime anchor exists. This reliably clears HGSS'
-                # "Touch to Start" title screen, where A alone can stall.
-                backend.pulse("Start", 4)
-                time.sleep(max(input_interval, 0.08))
-                backend.pulse("A", 4)
-                time.sleep(max(input_interval, 0.08))
+                # On retail HGSS, A is accepted at "Touch to Start". Use a
+                # substantial 10-frame A press followed by a clean release gap.
+                # Every fourth cycle also sends Start first as a compatibility
+                # assist for title-state timing; A remains the primary input.
+                boot_input_cycle += 1
+                if boot_input_cycle % 4 == 0:
+                    backend.pulse("Start", 6)
+                    time.sleep(0.12)
+
+                backend.pulse("A", 10)
+                time.sleep(0.22)
                 continue
 
             if not loaded_reported:
                 print(f"Save/runtime anchor available after {time.monotonic() - cycle_started:.2f}s.")
                 loaded_reported = True
 
-            # Once the game is loaded, stop fast-forwarding so the exact HGSS
-            # pre-starter guard cannot be overrun by a long held button.
-            if fast_forward_enabled:
-                backend.set_fast_forward(False)
-                fast_forward_enabled = False
-                backend.reset_input()
-                time.sleep(0.05)
+            # Title input ran at normal speed, so just clear any boot input
+            # before the exact HGSS pre-starter guard takes over.
+            backend.reset_input()
+            time.sleep(0.05)
 
             try:
                 ready = _hgss_starter_ui_ready(backend, live_base)
