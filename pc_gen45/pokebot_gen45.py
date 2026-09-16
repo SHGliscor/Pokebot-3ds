@@ -234,6 +234,7 @@ def _reach_hgss_starter_screen(
     input_interval: float,
     boot_settle: float,
     jitter_boost: float = 0.0,
+    stop_check=None,
 ):
     """
     Reach the HGSS starter carousel without selecting a starter.
@@ -276,6 +277,8 @@ def _reach_hgss_starter_screen(
         boot_input_cycle = 0
 
         while time.monotonic() < deadline:
+            if stop_check is not None and stop_check():
+                return None, base_hint, "stopped", time.monotonic() - cycle_started
             try:
                 live_base = _hgss_live_starter_base(backend)
             except (RuntimeError, TimeoutError):
