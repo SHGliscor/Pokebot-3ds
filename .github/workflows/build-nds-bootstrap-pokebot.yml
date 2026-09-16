@@ -21,10 +21,12 @@ jobs:
       - name: Checkout Pokebot staging branch
         uses: actions/checkout@v4
 
-      - name: Install host tools
+      - name: Verify preinstalled build tools
         run: |
-          apt-get update
-          apt-get install -y git gcc p7zip-full python3
+          git --version
+          gcc --version
+          python3 --version
+          make --version
           git config --global safe.directory '*'
 
       - name: Clone pinned nds-bootstrap
