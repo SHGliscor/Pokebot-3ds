@@ -67,6 +67,22 @@ def cmd_input_test(args) -> int:
     return 0
 
 
+def cmd_display(args) -> int:
+    backend = make_backend(args)
+    enabled = args.state == "on"
+    backend.set_display(enabled)
+    print(f"melonDS display rendering: {'ON' if enabled else 'OFF'}")
+    return 0
+
+
+def cmd_audio(args) -> int:
+    backend = make_backend(args)
+    enabled = args.state == "on"
+    backend.set_audio(enabled)
+    print(f"melonDS bot audio: {'ON' if enabled else 'MUTED'}")
+    return 0
+
+
 def cmd_scan(args) -> int:
     backend = make_backend(args)
     names = load_species_names()
@@ -378,86 +394,113 @@ def cmd_hgss_starter_hunt(args) -> int:
     resets = 0
     after_reset = False
 
+    display_disabled = False
+    audio_disabled = False
+
     try:
-        while True:
-            jitter_boost = min(duplicate_streak * args.duplicate_jitter_step, args.duplicate_jitter_max)
-            mons, resolved_base, source, cycle_seconds = _reach_hgss_starter_screen(
-                backend,
-                base_hint=base_hint,
-                timeout=args.navigation_timeout,
-                after_reset=after_reset,
-                reset_delay_min=args.reset_delay_min,
-                reset_delay_max=args.reset_delay_max,
-                input_interval=args.input_interval,
-                boot_settle=args.boot_settle,
-                jitter_boost=jitter_boost,
-            )
-            if mons is None:
-                backend.reset_input()
-                print("SAFETY HOLD: starter screen was not reached before timeout.")
-                print("No further input or resets will be sent.")
-                return 3
-
-            print(f"Starter screen reacquired in {cycle_seconds:.2f}s.")
-            base_hint = resolved_base
-            identity = _starter_set_identity(mons)
-            if identity in seen_sets:
-                duplicates += 1
-                duplicate_streak += 1
-                print(
-                    f"Duplicate starter set detected (duplicate #{duplicates}, "
-                    f"streak {duplicate_streak})."
-                )
-            else:
-                duplicate_streak = 0
-                seen_sets.add(identity)
-                sets_seen += 1
-                print(
-                    f"Set {sets_seen} @ 0x{base_hint:08X} [{source}] "
-                    f"({sets_seen * 3} starters checked)"
-                )
-                _print_starter_set(mons, names)
-
-            targets = [m for m in mons if m.species in target_species and m.shiny]
-            if targets:
-                backend.reset_input()
-                print()
-                print("=" * 68)
-                print("TARGET FOUND - STOPPED BEFORE STARTER SELECTION")
-                _print_starter_set(targets, names)
-                print(
-                    f"Sets={sets_seen}  Starters={sets_seen * 3}  "
-                    f"Resets={resets}  Duplicates={duplicates}"
-                )
-                print("=" * 68)
-                _sound_target()
-                return 10
-
-            if args.max_resets and resets >= args.max_resets:
-                backend.reset_input()
-                print(
-                    f"Reached max resets ({args.max_resets}). "
-                    f"Sets={sets_seen}, starters={sets_seen * 3}, duplicates={duplicates}."
-                )
-                return 0
-
-            print("No target in this set; resetting...")
-            backend.reset_input()
-            backend.reset_game()
-            resets += 1
-            after_reset = True
-
-    except KeyboardInterrupt:
-        try:
-            backend.reset_input()
-        except Exception:
-            pass
+        if not args.show_display:
+            backend.set_display(False)
+            display_disabled = True
+            print("melonDS display rendering: OFF (bot headless mode)")
+        if not args.keep_audio:
+            backend.set_audio(False)
+            audio_disabled = True
+            print("melonDS sound: MUTED for hunt")
         print()
-        print(
-            f"Stopped. Sets={sets_seen}, starters={sets_seen * 3}, "
-            f"resets={resets}, duplicates={duplicates}."
-        )
-        return 130
+
+        try:
+            while True:
+                jitter_boost = min(duplicate_streak * args.duplicate_jitter_step, args.duplicate_jitter_max)
+                mons, resolved_base, source, cycle_seconds = _reach_hgss_starter_screen(
+                    backend,
+                    base_hint=base_hint,
+                    timeout=args.navigation_timeout,
+                    after_reset=after_reset,
+                    reset_delay_min=args.reset_delay_min,
+                    reset_delay_max=args.reset_delay_max,
+                    input_interval=args.input_interval,
+                    boot_settle=args.boot_settle,
+                    jitter_boost=jitter_boost,
+                )
+                if mons is None:
+                    backend.reset_input()
+                    print("SAFETY HOLD: starter screen was not reached before timeout.")
+                    print("No further input or resets will be sent.")
+                    return 3
+
+                print(f"Starter screen reacquired in {cycle_seconds:.2f}s.")
+                base_hint = resolved_base
+                identity = _starter_set_identity(mons)
+                if identity in seen_sets:
+                    duplicates += 1
+                    duplicate_streak += 1
+                    print(
+                        f"Duplicate starter set detected (duplicate #{duplicates}, "
+                        f"streak {duplicate_streak})."
+                    )
+                else:
+                    duplicate_streak = 0
+                    seen_sets.add(identity)
+                    sets_seen += 1
+                    print(
+                        f"Set {sets_seen} @ 0x{base_hint:08X} [{source}] "
+                        f"({sets_seen * 3} starters checked)"
+                    )
+                    _print_starter_set(mons, names)
+
+                targets = [m for m in mons if m.species in target_species and m.shiny]
+                if targets:
+                    backend.reset_input()
+                    print()
+                    print("=" * 68)
+                    print("TARGET FOUND - STOPPED BEFORE STARTER SELECTION")
+                    _print_starter_set(targets, names)
+                    print(
+                        f"Sets={sets_seen}  Starters={sets_seen * 3}  "
+                        f"Resets={resets}  Duplicates={duplicates}"
+                    )
+                    print("=" * 68)
+                    _sound_target()
+                    return 10
+
+                if args.max_resets and resets >= args.max_resets:
+                    backend.reset_input()
+                    print(
+                        f"Reached max resets ({args.max_resets}). "
+                        f"Sets={sets_seen}, starters={sets_seen * 3}, duplicates={duplicates}."
+                    )
+                    return 0
+
+                print("No target in this set; resetting...")
+                backend.reset_input()
+                backend.reset_game()
+                resets += 1
+                after_reset = True
+
+        except KeyboardInterrupt:
+            try:
+                backend.reset_input()
+            except Exception:
+                pass
+            print()
+            print(
+                f"Stopped. Sets={sets_seen}, starters={sets_seen * 3}, "
+                f"resets={resets}, duplicates={duplicates}."
+            )
+            return 130
+    finally:
+        # Always restore the emulator presentation on target, safety hold,
+        # Ctrl+C, normal max-reset exit, or an unexpected exception.
+        if display_disabled:
+            try:
+                backend.set_display(True)
+            except Exception:
+                pass
+        if audio_disabled:
+            try:
+                backend.set_audio(True)
+            except Exception:
+                pass
 
 
 
@@ -542,6 +585,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--frames", type=int, default=6)
     s.set_defaults(func=cmd_input_test)
 
+    s = sub.add_parser("display")
+    s.add_argument("state", choices=["on", "off"])
+    s.set_defaults(func=cmd_display)
+
+    s = sub.add_parser("audio")
+    s.add_argument("state", choices=["on", "off"])
+    s.set_defaults(func=cmd_audio)
+
     s = sub.add_parser("scan")
     s.set_defaults(func=cmd_scan)
 
@@ -562,6 +613,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Limit shiny targets; repeat for multiple. Default: all three.",
     )
     s.add_argument("--max-resets", type=int, default=0, help="0 = unlimited")
+    s.add_argument("--show-display", action="store_true", help="Keep melonDS screen rendering during the hunt")
+    s.add_argument("--keep-audio", action="store_true", help="Keep melonDS game audio enabled during the hunt")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
     s.add_argument("--boot-settle", type=float, default=0.35)
     s.add_argument("--reset-delay-min", type=float, default=0.00)
