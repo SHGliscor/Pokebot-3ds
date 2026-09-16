@@ -1,8 +1,8 @@
--- Pokebot Gen4/5 melonDS bridge v0p1
+-- Pokebot Gen4/5 melonDS bridge v0p2
 --
--- Requires the Pokebot melonDS-Lua build, which adds memory.read_block().
--- IPC is deliberately local-file based: no firewall, network adapter or
--- localhost socket setup is required.
+-- Requires the Pokebot melonDS-Lua build, which adds memory.read_block()
+-- plus direct touchscreen control. IPC is local-file based: no firewall or
+-- localhost networking setup is required.
 
 local memory = require("core.memory")
 local emu = require("core.emu")
@@ -80,7 +80,7 @@ local function process_command()
 
     local ok, err = pcall(function()
         if cmd == "PING" then
-            respond(seq, {"Pokebot-melonDS-v0p1"})
+            respond(seq, {"Pokebot-melonDS-v0p2"})
             return
         end
 
@@ -122,9 +122,27 @@ local function process_command()
             return
         end
 
+        if cmd == "TOUCH" then
+            local x = tonumber(parts[3])
+            local y = tonumber(parts[4])
+            if not x or not y or x < 0 or x > 255 or y < 0 or y > 191 then
+                error("bad touch coordinates")
+            end
+            emu.touch(x, y)
+            respond(seq, {"TOUCH", x, y})
+            return
+        end
+
+        if cmd == "TOUCH_RELEASE" then
+            emu.releaseTouch()
+            respond(seq, {"TOUCH_RELEASE"})
+            return
+        end
+
         if cmd == "RESET" then
             pulses = {}
             emu.resetInput()
+            emu.releaseTouch()
             emu.reset()
             respond(seq, {"RESET"})
             return
@@ -143,5 +161,5 @@ emu.onFrame(function()
     process_command()
 end)
 
-print("[Pokebot] Gen4/5 bridge v0p1 active")
+print("[Pokebot] Gen4/5 bridge v0p2 active")
 print("[Pokebot] IPC directory: " .. IPC_DIR)
