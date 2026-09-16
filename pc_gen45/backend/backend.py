@@ -25,5 +25,9 @@ class EmulatorBackend(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def set_fast_forward(self, enabled: bool) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def reset_game(self) -> None:
         raise NotImplementedError
