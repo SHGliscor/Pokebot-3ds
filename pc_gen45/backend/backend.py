@@ -25,5 +25,13 @@ class EmulatorBackend(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def touch(self, x: int, y: int) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def release_touch(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def reset_game(self) -> None:
         raise NotImplementedError
