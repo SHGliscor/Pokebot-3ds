@@ -125,6 +125,22 @@ def _read_hgss_live_starters(backend):
     return _read_hgss_starter_triplet(backend, base), base
 
 
+def _hgss_starter_ui_ready(backend, base: int) -> bool:
+    """
+    HGSS starter-carousel guard ported from Pokebot-NDS.
+
+    It advances text while:
+        *(starter_data - 8) != 0 OR *(starter_data - 4) == 0
+
+    Therefore the safe stop condition is:
+        *(starter_data - 8) == 0 AND *(starter_data - 4) != 0
+    """
+    raw = backend.read_block(base - 8, 8)
+    before8 = int.from_bytes(raw[:4], "little")
+    before4 = int.from_bytes(raw[4:8], "little")
+    return before8 == 0 and before4 != 0
+
+
 def _find_hgss_starter_triplet_in_ram(ram: bytes):
     """Fallback discovery: find 152/155/158 exactly 0xEC apart with valid checksums."""
     mons = scan_pk4(
@@ -204,20 +220,24 @@ def _reach_hgss_starter_screen(
     jitter_boost: float = 0.0,
 ):
     """
-    Reach the HGSS starter screen without ever pressing A after a valid starter
-    triplet becomes readable.
+    Reach the HGSS starter carousel without selecting a starter.
 
-    HGSS creates all three starters before the player chooses one.  On reset we
-    wait a randomized boot delay (mirroring Pokebot-NDS' duplicate-seed
-    mitigation), press Start once, then pulse A while validating the starter
-    structures between every input.
+    Boot/title handling and in-game text are separate phases:
+      1) While the HGSS runtime anchor is unavailable, send robust A presses
+         through the title/continue screens.
+      2) Once the save is loaded and the live starter pointer resolves, use
+         HGSS' two pre-buffer state words as the exact safe stop guard.
+      3) When the guard says the carousel is ready, release A, return to normal
+         speed and allow 9 normal frames for all three PK4s to finish writing.
+
+    This mirrors Pokebot-NDS' HGSS starter strategy instead of blindly tapping
+    A based on wall-clock sleeps.
     """
     cycle_started = time.monotonic()
     deadline = cycle_started + timeout
 
+    jitter = 0.0
     if after_reset:
-        # Keep only a small randomized component by default. If repeated
-        # starter sets are actually detected, the caller increases jitter.
         jitter = random.uniform(reset_delay_min, reset_delay_max) + jitter_boost
         if boot_settle > 0:
             time.sleep(boot_settle)
@@ -227,46 +247,79 @@ def _reach_hgss_starter_screen(
             f"Boot settle={boot_settle:.2f}s RNG jitter={jitter:.2f}s"
             + (f" (adaptive +{jitter_boost:.2f}s)" if jitter_boost else "")
         )
-        # Use a slightly longer Start pulse so it is reliably accepted as soon
-        # as the title screen becomes responsive.
-        backend.pulse("Start", 4)
-        time.sleep(0.10)
 
     fast_forward_enabled = False
-    if after_reset:
+    try:
+        # Fast-forward is useful for logo/title/loading, but we intentionally
+        # return to normal speed before using the fine starter-carousel guard.
         backend.set_fast_forward(True)
         fast_forward_enabled = True
 
-    try:
+        loaded_reported = False
+
         while time.monotonic() < deadline:
-            # Resolve the moving starter block through HGSS' runtime anchor.
-            # This avoids a 4 MiB scan and remains valid when the allocation
-            # shifts by a few bytes between resets.
             try:
-                mons, resolved_base = _read_hgss_live_starters(backend)
+                live_base = _hgss_live_starter_base(backend)
             except (RuntimeError, TimeoutError):
-                mons, resolved_base = None, None
-            source = "pointer"
+                live_base = None
 
-            if mons is not None and resolved_base is not None:
-                # Drop to normal speed before final target evaluation/hold.
-                if fast_forward_enabled:
-                    backend.set_fast_forward(False)
-                    fast_forward_enabled = False
+            if live_base is None:
+                # At boot/title/continue there is no HGSS runtime anchor yet.
+                # A works for the title just like Start and an 8-frame press is
+                # substantially more reliable than the previous 1-2 frame taps.
+                backend.pulse("A", 8)
+                time.sleep(max(input_interval, 0.035))
+                continue
 
-                # Two stable reads protect against catching the game midway
-                # through writing the three generated PK4 structures.
-                time.sleep(0.03)
-                stable = _read_hgss_starter_triplet(backend, resolved_base)
-                if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
-                    return stable, resolved_base, source, time.monotonic() - cycle_started
+            if not loaded_reported:
+                print(f"Save/runtime anchor available after {time.monotonic() - cycle_started:.2f}s.")
+                loaded_reported = True
 
-            # No valid trio yet: advance dialogue/title quickly.
-            backend.pulse("A", 2)
-            time.sleep(input_interval)
+            # Once the game is loaded, stop fast-forwarding so the exact HGSS
+            # pre-starter guard cannot be overrun by a long held button.
+            if fast_forward_enabled:
+                backend.set_fast_forward(False)
+                fast_forward_enabled = False
+                backend.reset_input()
+                time.sleep(0.05)
+
+            try:
+                ready = _hgss_starter_ui_ready(backend, live_base)
+            except (RuntimeError, TimeoutError):
+                ready = False
+
+            if ready:
+                backend.reset_input()
+
+                # Pokebot-NDS waits 9 frames after the guard changes so all
+                # three starters are fully written. At 60 FPS this is 150 ms.
+                time.sleep(9.0 / 60.0)
+
+                mons = _read_hgss_starter_triplet(backend, live_base)
+                if mons is not None:
+                    # One second read guards against a partially-updated trio.
+                    time.sleep(0.02)
+                    stable = _read_hgss_starter_triplet(backend, live_base)
+                    if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
+                        return stable, live_base, "pointer", time.monotonic() - cycle_started
+
+                # Guard became ready but data was not stable yet; do not press A.
+                # Simply allow the game a few more frames to finish the writes.
+                time.sleep(0.05)
+                continue
+
+            # Pokebot-NDS progress_text() holds A for 5-20 frames then releases
+            # for 5. A shorter deterministic pulse is enough here while still
+            # giving the game a clean release edge before we re-check the guard.
+            backend.pulse("A", 6)
+            time.sleep(max(input_interval, 0.12))
 
         return None, base_hint, "timeout", time.monotonic() - cycle_started
     finally:
+        try:
+            backend.reset_input()
+        except Exception:
+            pass
         if fast_forward_enabled:
             try:
                 backend.set_fast_forward(False)
@@ -508,7 +561,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--max-resets", type=int, default=0, help="0 = unlimited")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
-    s.add_argument("--boot-settle", type=float, default=0.10)
+    s.add_argument("--boot-settle", type=float, default=0.35)
     s.add_argument("--reset-delay-min", type=float, default=0.00)
     s.add_argument("--reset-delay-max", type=float, default=0.20)
     s.add_argument("--duplicate-jitter-step", type=float, default=0.40)
@@ -516,8 +569,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--input-interval",
         type=float,
-        default=0.015,
-        help="Seconds between navigation button pulses while fast-forwarding (default: 0.015)",
+        default=0.035,
+        help="Minimum wall delay between boot/title input checks (default: 0.035)",
     )
     s.set_defaults(func=cmd_hgss_starter_hunt)
 
