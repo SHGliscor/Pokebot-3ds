@@ -55,30 +55,53 @@ python pokebot_gen45.py ping
 python pokebot_gen45.py scan
 ```
 
-For the starter-address proof, save in Elm's lab immediately before choosing:
+HGSS starters are generated together before the player chooses one.  The
+HeartGold Europe v10 probe confirmed a contiguous three-Pokemon block beginning
+at `0x022BBE84`, spaced by the Gen-IV PartyPokemon size (`0xEC`):
+
+- Chikorita
+- Cyndaquil
+- Totodile
+
+To verify the current starter set without selecting anything:
 
 ```
-python pokebot_gen45.py starter-probe
+python pokebot_gen45.py hgss-starter-check
 ```
 
-The tool takes a RAM snapshot, asks you to choose one starter, then takes a
-second snapshot. Any newly-created checksum-valid Chikorita/Cyndaquil/Totodile
-is printed with PID, shiny value, nature, ability, IVs and Hidden Power.
+To run the automatic shiny loop:
+
+```
+python pokebot_gen45.py hgss-starter-hunt
+```
+
+The hunter validates all three checksum-correct PK4 structures before sending
+any further input.  If one of the selected target species is shiny it stops
+before starter selection.  Otherwise it resets the emulator, adds a randomized
+boot delay to reduce duplicate RNG seeds, advances back to Elm's starter
+machine, and checks the next three.
+
+The fixed HeartGold Europe address is a fast path only.  If it does not
+validate, the bot falls back to a full 4 MiB ARM9 RAM scan and requires an exact
+152/155/158 trio separated by `0xEC`.
+
+The old `starter-probe` command is retained only as a diagnostic.
 
 ## Current scope
 
-v0p1 proves:
+Current proof implements:
 - direct ARM9 bulk RAM read from melonDS
 - direct button forcing through the melonDS Lua API
 - emulator reset
 - checksum-valid PK4 parsing
-- full-RAM PK4 discovery with no region-specific address
-- starter before/after probe
+- full-RAM PK4 discovery with no required region-specific address
+- HGSS three-starter pre-selection reader
+- automatic HGSS shiny starter reset loop
+- duplicate starter-set tracking
+- safety hold on navigation timeout
 - pret-backed Gen-IV species table
 
-Next after the hardware/software probe passes:
-- lock the live party/starter addresses for HeartGold Europe
-- automate the complete starter reset loop
+Next:
 - session/lifetime statistics
 - party viewer
 - wild encounter reader
