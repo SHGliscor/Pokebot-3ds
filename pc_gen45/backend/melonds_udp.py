@@ -109,3 +109,9 @@ class MelonDSUDPBackend(EmulatorBackend):
 
     def set_fast_forward(self, enabled: bool) -> None:
         self._request(7, bytes([1 if enabled else 0]))
+
+    def set_display(self, enabled: bool) -> None:
+        self._request(8, bytes([1 if enabled else 0]))
+
+    def set_audio(self, enabled: bool) -> None:
+        self._request(9, bytes([1 if enabled else 0]))
