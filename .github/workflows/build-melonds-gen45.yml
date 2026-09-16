@@ -1,0 +1,161 @@
+name: Build Pokebot Gen45 PC melonDS
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pc_gen45/**'
+      - '.github/workflows/build-melonds-gen45.yml'
+
+jobs:
+  build:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/vcpkg_cache,readwrite
+
+    steps:
+      - name: Checkout Pokebot repo
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          pacboy: gcc:p cmake:p ninja:p make:p python:p git:p
+
+      - name: Generate pret-backed Gen4 data
+        run: |
+          set -eux
+          python pc_gen45/tools/import_pret_gen4.py
+          test -s pc_gen45/data/species_gen4.json
+
+      - name: Run PK4 unit tests
+        run: |
+          set -eux
+          cd pc_gen45
+          python -m unittest discover -s tests -v
+
+      - name: Fetch pinned melonDS-Lua
+        run: |
+          set -eux
+          git clone https://github.com/Veddy1674/melonDS-lua.git melonDS-lua
+          cd melonDS-lua
+          git checkout 8d7891ade565fae44256eb0400581517261544aa
+          test "$(git rev-parse HEAD)" = "8d7891ade565fae44256eb0400581517261544aa"
+
+      - name: Add Pokebot bulk RAM API
+        run: |
+          set -eux
+          python pc_gen45/tools/apply_melonds_patch.py melonDS-lua
+          cp pc_gen45/melonds/pokebot_bridge.lua melonDS-lua/lua/pokebot_bridge.lua
+          grep -q 'read_block' melonDS-lua/lua/core/memory.lua
+          grep -q 'native.set_function("read_block"' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
+
+      - name: Restore vcpkg cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-gen45-x86_64-mingw-${{ hashFiles('melonDS-lua/vcpkg.json') }}
+          restore-keys: vcpkg-gen45-x86_64-mingw-
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: melonDS-lua/vcpkg.json
+
+      - name: Configure melonDS
+        run: |
+          set -eux
+          cd melonDS-lua
+          cmake --preset=release-mingw-x86_64 -DMELONDS_EMBED_BUILD_INFO=ON
+
+      - name: Build melonDS
+        run: |
+          set -eux
+          cd melonDS-lua
+          cmake --build --preset=release-mingw-x86_64
+          test -s build/release-mingw-x86_64/melonDS.exe
+
+      - name: Stage package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifact | Out-Null
+          New-Item -ItemType Directory -Force -Path artifact\lua | Out-Null
+          New-Item -ItemType Directory -Force -Path artifact\backend | Out-Null
+          New-Item -ItemType Directory -Force -Path artifact\gen4 | Out-Null
+          New-Item -ItemType Directory -Force -Path artifact\data | Out-Null
+          New-Item -ItemType Directory -Force -Path artifact\pokebot_ipc | Out-Null
+
+          Copy-Item melonDS-lua\build\release-mingw-x86_64\melonDS.exe artifact\melonDS.exe
+          Copy-Item -Recurse melonDS-lua\lua\core artifact\lua\core
+          Copy-Item pc_gen45\melonds\pokebot_bridge.lua artifact\lua\pokebot_bridge.lua
+          Copy-Item pc_gen45\pokebot_gen45.py artifact\
+          Copy-Item pc_gen45\backend\*.py artifact\backend\
+          Copy-Item pc_gen45\gen4\*.py artifact\gen4\
+          Copy-Item pc_gen45\data\species_gen4.json artifact\data\
+          Copy-Item pc_gen45\README.md artifact\README.md
+          Copy-Item melonDS-lua\LICENSE artifact\MELONDS_GPLv3_LICENSE.txt
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          python pokebot_gen45.py ping
+          pause
+          '@ | Set-Content -Encoding ASCII artifact\TEST_BRIDGE.bat
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          python pokebot_gen45.py scan
+          pause
+          '@ | Set-Content -Encoding ASCII artifact\SCAN_RAM.bat
+
+          @'
+          @echo off
+          cd /d "%~dp0"
+          python pokebot_gen45.py starter-probe
+          pause
+          '@ | Set-Content -Encoding ASCII artifact\HEARTGOLD_STARTER_PROBE.bat
+
+          @'
+          Pokebot Gen4/5 PC v0p1
+
+          1. Run melonDS.exe and boot HeartGold.
+          2. In melonDS load/run lua\pokebot_bridge.lua.
+          3. Run TEST_BRIDGE.bat. It should print PING PASS.
+          4. Run SCAN_RAM.bat in the overworld.
+          5. For the starter proof, save immediately before Elm's starter
+             selection and run HEARTGOLD_STARTER_PROBE.bat.
+          6. Choose one starter when the probe asks, return control to the
+             player, then press Enter in the probe window.
+
+          Target ROM:
+          HeartGold Europe v10
+          SHA1 EB47AB4BA0326AE842135F62C7EC68CF85C9785F
+
+          This build reads emulated game RAM and injects controller input.
+          It does not write Pokemon/game data.
+          '@ | Set-Content -Encoding ASCII artifact\FIRST_TEST.txt
+
+          (Get-FileHash artifact\melonDS.exe -Algorithm SHA256).Hash | Set-Content artifact\MELONDS_SHA256.txt
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pokebot-Gen45-PC-v0p1
+          path: artifact/
+          if-no-files-found: error
+
+      - name: Save vcpkg cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/vcpkg_cache
+          key: vcpkg-gen45-x86_64-mingw-${{ hashFiles('melonDS-lua/vcpkg.json') }}
