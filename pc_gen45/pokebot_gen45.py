@@ -48,6 +48,16 @@ def cmd_ping(args) -> int:
     return 0
 
 
+def cmd_input_test(args) -> int:
+    backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
+    key = args.key
+    print(f"Sending {key} for {args.frames} frame(s).")
+    print("Keep melonDS UNFOCUSED while this runs.")
+    backend.pulse(key, args.frames)
+    print("Input command sent.")
+    return 0
+
+
 def cmd_scan(args) -> int:
     backend = MelonDSFileBackend(args.ipc, timeout=max(5.0, args.timeout))
     names = load_species_names()
@@ -377,6 +387,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("ping")
     s.set_defaults(func=cmd_ping)
+
+    s = sub.add_parser("input-test")
+    s.add_argument("--key", default="A")
+    s.add_argument("--frames", type=int, default=6)
+    s.set_defaults(func=cmd_input_test)
 
     s = sub.add_parser("scan")
     s.set_defaults(func=cmd_scan)
