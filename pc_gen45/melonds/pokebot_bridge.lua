@@ -7,7 +7,10 @@
 local memory = require("core.memory")
 local emu = require("core.emu")
 
-local IPC_DIR = "pokebot_ipc"
+local source = debug.getinfo(1, "S").source or ""
+local script_path = string.sub(source, 1, 1) == "@" and string.sub(source, 2) or source
+local script_dir = string.match(script_path, "^(.*)[/\\]") or "."
+local IPC_DIR = script_dir .. "/../../pokebot_ipc"
 local COMMAND = IPC_DIR .. "/command.tsv"
 local RESPONSE = IPC_DIR .. "/response.bin"
 
