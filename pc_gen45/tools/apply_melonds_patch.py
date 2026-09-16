@@ -19,6 +19,8 @@ cpp = ROOT / "src/frontend/qt_sdl/ScriptManager.cpp"
 mem = ROOT / "lua/core/memory.lua"
 sol = ROOT / "sol/sol.hpp"
 cmake_qt = ROOT / "src/frontend/qt_sdl/CMakeLists.txt"
+script_h = ROOT / "src/frontend/qt_sdl/ScriptManager.h"
+emu_thread = ROOT / "src/frontend/qt_sdl/EmuThread.cpp"
 
 replace_once(
     cpp,
@@ -98,4 +100,31 @@ endif()
 """,
 )
 
-print("Applied Pokebot melonDS RAM, sol2 compiler, and Windows linker compatibility patches")
+
+replace_once(
+    script_h,
+    """    bool externalInputsBlocked() const { return luaInputActive; }
+""",
+    """    bool externalInputsBlocked() const { return luaInputActive; }
+    melonDS::u32 externalInputMask() const { return luaInputMask.load(); }
+""",
+)
+
+replace_once(
+    emu_thread,
+    """            // process input and hotkeys if not blocked
+            if (!scriptManager.externalInputsBlocked())
+                emuInstance->nds->SetKeyMask(emuInstance->inputMask);
+""",
+    """            // Apply Pokebot/Lua input every emulation frame while it owns
+            // input. This makes injected controls independent of Qt window
+            // focus and prevents focus-loss keyboard cleanup from cancelling
+            // a bot-held key.
+            if (scriptManager.externalInputsBlocked())
+                emuInstance->nds->SetKeyMask(scriptManager.externalInputMask());
+            else
+                emuInstance->nds->SetKeyMask(emuInstance->inputMask);
+""",
+)
+
+print("Applied Pokebot melonDS RAM, background input, sol2 compiler, and Windows linker compatibility patches")
