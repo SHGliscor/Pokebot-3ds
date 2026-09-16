@@ -78,6 +78,8 @@ jobs:
           cmake -S . -B build-pokebot -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_STATIC=OFF \
+            -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
+            -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a \
             -DENABLE_LTO_RELEASE=OFF \
             -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
             -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a
