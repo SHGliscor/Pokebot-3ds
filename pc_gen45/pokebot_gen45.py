@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import sys
 import time
 
 from backend.melonds_file import MelonDSFileBackend
@@ -41,6 +40,26 @@ def mon_line(mon, names: dict[int, str]) -> str:
 def cmd_ping(args) -> int:
     backend = MelonDSFileBackend(args.ipc)
     print("PING:", backend.ping())
+    return 0
+
+
+def cmd_input_test(args) -> int:
+    backend = MelonDSFileBackend(args.ipc)
+    print("Bridge:", backend.ping())
+    print(f"Sending DS {args.key} for {args.frames} frame(s)...")
+    backend.pulse(args.key, args.frames)
+    return 0
+
+
+def cmd_touch_test(args) -> int:
+    backend = MelonDSFileBackend(args.ipc)
+    print("Bridge:", backend.ping())
+    print(f"Touching ({args.x}, {args.y}) for {args.frames} frame(s)...")
+    backend.touch(args.x, args.y)
+    # The Lua bridge runs at game-frame cadence, so a small wall-clock hold is
+    # sufficient for a manual proof without adding another bridge state machine.
+    time.sleep(max(0.05, args.frames / 60.0))
+    backend.release_touch()
     return 0
 
 
@@ -129,6 +148,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("ping")
     s.set_defaults(func=cmd_ping)
+
+    s = sub.add_parser("input-test")
+    s.add_argument("--key", default="A")
+    s.add_argument("--frames", type=int, default=3)
+    s.set_defaults(func=cmd_input_test)
+
+    s = sub.add_parser("touch-test")
+    s.add_argument("--x", type=int, default=128)
+    s.add_argument("--y", type=int, default=96)
+    s.add_argument("--frames", type=int, default=6)
+    s.set_defaults(func=cmd_touch_test)
 
     s = sub.add_parser("scan")
     s.set_defaults(func=cmd_scan)
