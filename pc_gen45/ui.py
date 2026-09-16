@@ -213,6 +213,7 @@ class PokebotUI:
         self.emulator_path = self.package_root / "emulator" / "melonDS.exe"
 
         self.stats = StatsStore()
+        self.abilities = load_ability_names()
         self.events: queue.Queue = queue.Queue()
         self.worker: StarterHuntWorker | None = None
         self.stop_event = threading.Event()
@@ -246,6 +247,10 @@ class PokebotUI:
         self.lifetime_seen_var = tk.StringVar(value="0")
         self.lifetime_shinies_var = tk.StringVar(value="0")
         self.lifetime_resets_var = tk.StringVar(value="0")
+        self.best_iv_sum_var = tk.StringVar(value="--")
+        self.worst_iv_sum_var = tk.StringVar(value="--")
+        self.best_sv_var = tk.StringVar(value="--")
+        self.worst_sv_var = tk.StringVar(value="--")
         self.effective_rolls_var = tk.StringVar(value="0")
         self.odds_chance_var = tk.StringVar(value="0.00%")
         self.odds_eta_var = tk.StringVar(value="--")
@@ -265,6 +270,7 @@ class PokebotUI:
         self._refresh_stats()
         self._render_current()
         self._render_last_seen()
+        self._render_recent_shinies()
         self._select_tab("DASHBOARD")
         self._select_mode("Starters")
         self._tick()
@@ -496,10 +502,10 @@ class PokebotUI:
         page.grid_columnconfigure(0, weight=3)
         page.grid_columnconfigure(1, weight=5)
         page.grid_columnconfigure(2, weight=3)
-        page.grid_rowconfigure(2, weight=1)
+        page.grid_rowconfigure(1, weight=1)
 
         # -----------------------------------------------------------------
-        # Hunt Control -- compact like Pokebot-Gen3's overlay controls.
+        # Hunt Control
         # -----------------------------------------------------------------
         control = self._frame(page)
         control.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
@@ -556,7 +562,7 @@ class PokebotUI:
         self.stop_button.pack(side="left", fill="x", expand=True, padx=(3, 0))
 
         # -----------------------------------------------------------------
-        # Current Encounter -- one actual encounter card, not 3 empty cards.
+        # Current Encounter
         # -----------------------------------------------------------------
         current = self._frame(page)
         current.grid(row=0, column=1, sticky="nsew", padx=4)
@@ -567,7 +573,7 @@ class PokebotUI:
         self.current_cards_wrap.pack(fill="both", expand=True, padx=8, pady=(0, 7))
 
         # -----------------------------------------------------------------
-        # Shiny Phase -- narrow telemetry panel from Pokebot-Gen3.
+        # Shiny Phase -- now owns all compact hunt telemetry.
         # -----------------------------------------------------------------
         phase = self._frame(page)
         phase.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
@@ -585,6 +591,12 @@ class PokebotUI:
             ("RATE", self.rate_var),
             ("CHANCE", self.odds_chance_var),
             ("ETA TO ODDS", self.odds_eta_var),
+            ("LIFETIME SEEN", self.lifetime_seen_var),
+            ("LIFETIME SHINIES", self.lifetime_shinies_var),
+            ("BEST IV Σ", self.best_iv_sum_var),
+            ("WORST IV Σ", self.worst_iv_sum_var),
+            ("BEST SV", self.best_sv_var),
+            ("WORST SV", self.worst_sv_var),
         )
         for idx, (name, var) in enumerate(phase_pairs):
             cell = tk.Frame(phase_grid, bg=PANEL_2)
@@ -596,18 +608,18 @@ class PokebotUI:
             self._label(
                 cell, name, font=("Segoe UI Semibold", 6),
                 fg=MUTED, bg=PANEL_2
-            ).pack(pady=(4, 0))
+            ).pack(pady=(3, 0))
             self._label(
-                cell, textvariable=var, font=("Segoe UI Semibold", 10),
+                cell, textvariable=var, font=("Segoe UI Semibold", 9),
                 bg=PANEL_2
-            ).pack(pady=(0, 4))
+            ).pack(pady=(0, 3))
 
         self.odds_canvas = tk.Canvas(
-            phase, height=12, bg="#0a1118", highlightthickness=0
+            phase, height=10, bg="#0a1118", highlightthickness=0
         )
-        self.odds_canvas.pack(fill="x", padx=10, pady=(7, 1))
+        self.odds_canvas.pack(fill="x", padx=10, pady=(6, 1))
         self.odds_bar_rect = self.odds_canvas.create_rectangle(
-            0, 0, 0, 12, fill=GOOD, outline=""
+            0, 0, 0, 10, fill=GOOD, outline=""
         )
         self.odds_bar_text = self._label(
             phase, "0 / 8,192 target rolls",
@@ -623,46 +635,42 @@ class PokebotUI:
         self.phase_cycle_value = self._phase_info_row(
             "Last cycle", self.last_cycle_text
         )
-        self.phase_bridge_value = self._phase_info_row(
-            "Backend", "melonDS UDP :4953"
-        )
-        self.phase_display_value = self._phase_info_row("Display", "ON")
-        self.phase_audio_value = self._phase_info_row("Audio", "ON")
 
         # -----------------------------------------------------------------
-        # Compact session/lifetime strip.
+        # Lower half: Encounter Log | Recent Shinies.
+        # Removing the stats strip gives both panels the reclaimed space.
         # -----------------------------------------------------------------
-        stats = self._frame(page, highlightbackground="#263b4b")
-        stats.grid(row=1, column=0, columnspan=3, sticky="ew", pady=6)
-        for i in range(6):
-            stats.grid_columnconfigure(i, weight=1)
-        defs = (
-            ("Session Seen", self.session_seen_var),
-            ("Resets", self.session_resets_var),
-            ("Shinies", self.session_shinies_var),
-            ("Seen / Hour", self.rate_var),
-            ("Lifetime Seen", self.lifetime_seen_var),
-            ("Lifetime Shinies", self.lifetime_shinies_var),
-        )
-        for col, (name, var) in enumerate(defs):
-            self._stat_box(stats, name, var, col)
+        lower = tk.Frame(page, bg=BG)
+        lower.grid(row=1, column=0, columnspan=3, sticky="nsew", pady=(6, 0))
+        lower.grid_columnconfigure(0, weight=1, uniform="lower")
+        lower.grid_columnconfigure(1, weight=1, uniform="lower")
+        lower.grid_rowconfigure(0, weight=1)
 
-        # -----------------------------------------------------------------
-        # Encounter Log -- the dominant lower panel, as in Pokebot-Gen3.
-        # -----------------------------------------------------------------
-        encounter_log = self._frame(page)
-        encounter_log.grid(
-            row=2, column=0, columnspan=3, sticky="nsew"
-        )
+        encounter_log = self._frame(lower)
+        encounter_log.grid(row=0, column=0, sticky="nsew", padx=(0, 4))
         encounter_log.grid_columnconfigure(0, weight=1)
         encounter_log.grid_rowconfigure(1, weight=1)
         self._section_title(
             encounter_log,
             "ENCOUNTER LOG",
-            "Newest first • live session history"
+            "Newest first"
         ).grid(row=0, column=0, sticky="ew", padx=9, pady=(7, 3))
         self.last_seen_wrap = tk.Frame(encounter_log, bg=PANEL)
         self.last_seen_wrap.grid(
+            row=1, column=0, sticky="nsew", padx=7, pady=(0, 7)
+        )
+
+        recent_shiny = self._frame(lower)
+        recent_shiny.grid(row=0, column=1, sticky="nsew", padx=(4, 0))
+        recent_shiny.grid_columnconfigure(0, weight=1)
+        recent_shiny.grid_rowconfigure(1, weight=1)
+        self._section_title(
+            recent_shiny,
+            "RECENT SHINIES",
+            "Persistent lifetime history"
+        ).grid(row=0, column=0, sticky="ew", padx=9, pady=(7, 3))
+        self.dashboard_shiny_wrap = tk.Frame(recent_shiny, bg=PANEL)
+        self.dashboard_shiny_wrap.grid(
             row=1, column=0, sticky="nsew", padx=7, pady=(0, 7)
         )
     def _phase_info_row(self, name: str, value: str):
@@ -1068,6 +1076,10 @@ class PokebotUI:
                 ("Encounter rate", self.rate_var),
                 ("Phase seen", self.phase_seen_var),
                 ("Phase time", self.phase_var),
+                ("Best IV sum", self.best_iv_sum_var),
+                ("Worst IV sum", self.worst_iv_sum_var),
+                ("Best SV", self.best_sv_var),
+                ("Worst SV", self.worst_sv_var),
             ],
         )
 
@@ -1115,47 +1127,78 @@ class PokebotUI:
             ).pack(side="right", padx=9, pady=7)
 
     def _render_recent_shinies(self) -> None:
-        if not hasattr(self, "recent_shiny_wrap"):
+        targets = []
+        if hasattr(self, "dashboard_shiny_wrap"):
+            targets.append(self.dashboard_shiny_wrap)
+        if hasattr(self, "recent_shiny_wrap"):
+            targets.append(self.recent_shiny_wrap)
+        if not targets:
             return
-        for child in self.recent_shiny_wrap.winfo_children():
-            child.destroy()
-        shinies = [
-            x for x in self.stats.snapshot().get("recently_seen", [])
-            if x.get("shiny")
-        ][:8]
-        if not shinies:
-            self._label(
-                self.recent_shiny_wrap,
-                "No shiny Pokémon recorded yet.",
-                font=("Segoe UI", 9),
-                fg=MUTED,
-            ).pack(anchor="w", pady=10)
-            return
-        for mon in shinies:
-            row = tk.Frame(self.recent_shiny_wrap, bg=PANEL_2)
-            row.pack(fill="x", pady=2)
-            img = self._sprite(int(mon["species"]), True, small=True)
-            lab = tk.Label(row, image=img, bg=PANEL_2)
-            lab.image = img
-            lab.pack(side="left", padx=5)
-            self._label(
-                row,
-                f"★ {mon.get('name', mon['species'])}",
-                font=("Segoe UI Semibold", 9),
-                fg=SHINY,
-                bg=PANEL_2,
-            ).pack(side="left")
-            self._label(
-                row,
-                f"PID {mon.get('pid', '-')}  |  SV {mon.get('sv', '-')}  |  "
-                f"{mon.get('nature', '-')}  |  IVs {'/'.join(map(str, mon.get('ivs', [])))}",
-                font=("Consolas", 8),
-                fg=MUTED,
-                bg=PANEL_2,
-            ).pack(side="right", padx=9)
 
-    # ---------- tools/settings/support ----------
+        shinies = self.stats.snapshot().get("recent_shinies", [])[:8]
 
+        for wrap in targets:
+            for child in wrap.winfo_children():
+                child.destroy()
+
+            if not shinies:
+                self._label(
+                    wrap,
+                    "No shiny Pokémon recorded yet.",
+                    font=("Segoe UI", 8),
+                    fg=MUTED,
+                    bg=PANEL,
+                ).pack(anchor="w", padx=7, pady=12)
+                continue
+
+            for mon in shinies:
+                row = tk.Frame(wrap, bg=PANEL_2)
+                row.pack(fill="x", pady=1)
+
+                img = self._sprite(int(mon["species"]), True, small=True)
+                lab = tk.Label(row, image=img, bg=PANEL_2, width=36)
+                lab.image = img
+                lab.pack(side="left", padx=(2, 5))
+
+                left = tk.Frame(row, bg=PANEL_2)
+                left.pack(side="left", fill="x", expand=True, pady=3)
+                self._label(
+                    left,
+                    f"★ {mon.get('name', mon['species'])}",
+                    font=("Segoe UI Semibold", 8),
+                    fg=SHINY,
+                    bg=PANEL_2,
+                ).pack(anchor="w")
+
+                ability = mon.get("ability", "-")
+                if isinstance(ability, int) or (isinstance(ability, str) and ability.isdigit()):
+                    ability = self.abilities.get(int(ability), f"Ability {ability}")
+                ivs = list(mon.get("ivs", []))
+                iv_sum = sum(int(v) for v in ivs[:6]) if ivs else 0
+                self._label(
+                    left,
+                    f"{mon.get('nature', '-')} • {ability} • IVΣ {iv_sum}",
+                    font=("Segoe UI", 7),
+                    fg=MUTED,
+                    bg=PANEL_2,
+                ).pack(anchor="w")
+
+                right = tk.Frame(row, bg=PANEL_2)
+                right.pack(side="right", padx=6, pady=3)
+                self._label(
+                    right,
+                    f"SV {mon.get('sv', '-')}",
+                    font=("Consolas", 8),
+                    fg=GOOD,
+                    bg=PANEL_2,
+                ).pack(anchor="e")
+                self._label(
+                    right,
+                    f"PID {mon.get('pid', '-')}",
+                    font=("Consolas", 7),
+                    fg=MUTED,
+                    bg=PANEL_2,
+                ).pack(anchor="e")
     def _build_tools(self) -> None:
         page = self.pages["TOOLS"]
         page.grid_columnconfigure(0, weight=1)
@@ -1377,26 +1420,15 @@ class PokebotUI:
                 self.status_line.configure(text=event["value"], fg=BAD)
 
         elif kind == "presentation":
-            if "display" in event:
-                self.phase_display_value.configure(
-                    text="OFF • headless" if not event["display"] else "ON"
-                )
-            if "audio" in event:
-                self.phase_audio_value.configure(
-                    text="MUTED" if not event["audio"] else "ON"
-                )
+            # Presentation state is controlled from Hunt Control/Tools but is
+            # intentionally not shown as dashboard telemetry.
+            pass
 
         elif kind == "manual_presentation":
             if event["ok"]:
                 state = "ON" if event["enabled"] else "OFF"
                 label = "Display" if event["which"] == "display" else "Sound"
                 self.status_line.configure(text=f"{label} {state}.", fg=MUTED)
-                if event["which"] == "display":
-                    self.phase_display_value.configure(text=state)
-                else:
-                    self.phase_audio_value.configure(
-                        text="ON" if event["enabled"] else "MUTED"
-                    )
             else:
                 self.status_line.configure(text=event["message"], fg=BAD)
 
@@ -1437,8 +1469,6 @@ class PokebotUI:
                 fg=SHINY,
                 detail=f"Target found: {names}. melonDS display and sound restored.",
             )
-            self.phase_display_value.configure(text="ON • target found")
-            self.phase_audio_value.configure(text="ON • target found")
             self._render_last_seen()
             self._render_recent_shinies()
 
@@ -1466,8 +1496,6 @@ class PokebotUI:
                     fg=GOOD,
                     detail="Hunt stopped. melonDS display/audio restored.",
                 )
-            self.phase_display_value.configure(text="ON")
-            self.phase_audio_value.configure(text="ON")
 
     def _refresh_stats(self) -> None:
         data = self.stats.snapshot()
@@ -1479,6 +1507,18 @@ class PokebotUI:
         self.lifetime_seen_var.set(str(lifetime["seen"]))
         self.lifetime_shinies_var.set(str(lifetime["shinies"]))
         self.lifetime_resets_var.set(str(lifetime["resets"]))
+        self.best_iv_sum_var.set(
+            "--" if session.get("best_iv_sum") is None else str(session["best_iv_sum"])
+        )
+        self.worst_iv_sum_var.set(
+            "--" if session.get("worst_iv_sum") is None else str(session["worst_iv_sum"])
+        )
+        self.best_sv_var.set(
+            "--" if session.get("best_sv") is None else str(session["best_sv"])
+        )
+        self.worst_sv_var.set(
+            "--" if session.get("worst_sv") is None else str(session["worst_sv"])
+        )
 
     def _tick(self) -> None:
         now = time.monotonic()
