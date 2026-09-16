@@ -48,6 +48,7 @@ jobs:
           set -eux
           python pc_gen45/tools/import_pret_gen4.py
           test -s pc_gen45/data/species_gen4.json
+          test -s pc_gen45/data/abilities_gen4.json
 
       - name: Run PK4 unit tests
         run: |
@@ -149,6 +150,7 @@ jobs:
           cp pc_gen45/backend/*.py "$ROOT/bot/backend/"
           cp pc_gen45/gen4/*.py "$ROOT/bot/gen4/"
           cp pc_gen45/data/species_gen4.json "$ROOT/bot/data/"
+          cp pc_gen45/data/abilities_gen4.json "$ROOT/bot/data/"
 
           SPRITE_SRC="pokeapi-sprites/sprites/pokemon/versions/generation-iv/heartgold-soulsilver"
           for i in $(seq 1 493); do
@@ -323,6 +325,8 @@ jobs:
           test -s "$ROOT/bot/pokebot_gen45.py"
           test -s "$ROOT/bot/ui.py"
           test -s "$ROOT/bot/stats_store.py"
+          test -s "$ROOT/bot/data/abilities_gen4.json"
+          grep -q '"66": "Blaze"' "$ROOT/bot/data/abilities_gen4.json"
           test -s "$ROOT/assets/sprites/hgss/normal/152.png"
           test -s "$ROOT/assets/sprites/hgss/shiny/152.png"
           test -s "$ROOT/docs/FIRST_TEST.txt"
