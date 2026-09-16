@@ -451,6 +451,12 @@ def cmd_hgss_starter_hunt(args) -> int:
                 targets = [m for m in mons if m.species in target_species and m.shiny]
                 if targets:
                     backend.reset_input()
+                    if display_disabled:
+                        backend.set_display(True)
+                        display_disabled = False
+                    if audio_disabled:
+                        backend.set_audio(True)
+                        audio_disabled = False
                     print()
                     print("=" * 68)
                     print("TARGET FOUND - STOPPED BEFORE STARTER SELECTION")
