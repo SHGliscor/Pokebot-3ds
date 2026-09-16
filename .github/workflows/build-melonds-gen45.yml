@@ -55,6 +55,14 @@ jobs:
           cd pc_gen45
           python -m unittest discover -s tests -v
 
+      - name: Smoke-check Python hunter
+        run: |
+          set -eux
+          python -m py_compile pc_gen45/pokebot_gen45.py pc_gen45/gen4/pk4.py pc_gen45/backend/backend.py pc_gen45/backend/melonds_file.py
+          cd pc_gen45
+          python pokebot_gen45.py --help >/dev/null
+          python pokebot_gen45.py hgss-starter-hunt --help >/dev/null
+
       - name: Fetch pinned melonDS-Lua
         run: |
           set -eux
