@@ -1,91 +1,95 @@
-# Pokebot nds-bootstrap PoC v0p1
+# Pokebot nds-bootstrap PoC v0p2
 
-This directory builds a separate experimental nds-bootstrap binary for the
-Pokebot NDS transport work. It does not modify the normal release build in
-TWiLight Menu++ unless you deliberately copy the test file over the Nightly
-bootstrap slot.
+This branch is the isolated Generation IV transport experiment for Pokebot. It
+builds a separate Nightly-slot nds-bootstrap and does not alter the normal
+TWiLight Menu++ Release bootstrap.
 
-## Pinned target
+## Hardware baseline
 
 - Console: New Nintendo 3DS
 - Test game: Pokemon HeartGold (Europe)
 - ROM SHA1: `EB47AB4BA0326AE842135F62C7EC68CF85C9785F`
-- nds-bootstrap commit:
+- nds-bootstrap:
   `1585a242c80f78fc67cb49a7bfe55a24cc362785`
+- RTCom/TwlBg reference:
+  `shocoman/Analog-Controls-for-NDS-Games-on-3DS@58a5afd55275a565fe7ee0ad40e927df0e7b514e`
 
-## v0p1 scope
+v0p1 was hardware-validated through HeartGold's Continue screen and into the
+overworld.
 
-The first build adds only the DS-side primitives needed for the transport:
+## v0p2 milestone
 
-- a four-word mailbox at `0x027FFA30..0x027FFA3C`;
-- `PING`;
-- timed `KEY_SET` with automatic release;
-- `RELEASE_ALL`;
-- aligned, read-only `READ32` inside `0x02000000..0x023FFFFC`;
-- injection through nds-bootstrap's existing generic key-input patch hook.
+v0p2 adds the first live New-3DS RTCom path:
 
-There are no RAM writes.
+```
+nds-bootstrap ARM7 bootloader
+        |
+        | upload RTCom microcode before HeartGold starts
+        v
+TWL ARM11 / TwlBg
+        |
+        | ZL/ZR/Nub -> legacy RTC extension registers
+        v
+nds-bootstrap ARM7 cardengine
+        |
+        | rising ZL edge
+        v
+synthetic DS A press
+        |
+        v
+HeartGold
+```
 
-The key fail-safe is deliberately strict: requests are clamped to at most
-120 VBlanks (about two seconds), and a zero duration defaults to two VBlanks.
+The RTCom installation is fail-open. If the ARM11 upload or TwlBg patch fails,
+the bootloader continues into HeartGold rather than deliberately stopping the
+game.
+
+## Hardware test
+
+Keep your known-good v0p1 file backed up.
+
+1. Replace only `/_nds/nds-bootstrap-nightly.nds` with the v0p2 file.
+2. Keep HeartGold configured to use the Nightly bootstrap.
+3. Boot to the overworld.
+4. Confirm normal physical controls still work.
+5. Face a sign, NPC, PC, door prompt, or another object where a normal **A**
+   press has an obvious effect.
+6. Press **ZL** on the New 3DS once.
+
+Expected result:
+
+`ZL -> one short synthetic DS A press`
+
+Holding ZL should not spam A. The bridge reacts only to the rising edge.
+
+If HeartGold boots but ZL does nothing, that is still useful: it means the
+normal nds-bootstrap/cardengine path remains sound and the failure is inside
+the RTCom/TwlBg side.
+
+## DS-side mailbox retained from v0p1
+
+The four-word mailbox remains at `0x027FFA30..0x027FFA3C` with:
+
+- `PING`
+- timed `KEY_SET`
+- `RELEASE_ALL`
+- aligned read-only `READ32` in `0x02000000..0x023FFFFC`
+
+No arbitrary game-RAM write command exists.
 
 ## ARM7 space trade-off
 
-The stock nds-bootstrap ARM7 cardengine is already packed into its
-`4 KiB + 0x80` allocation. An earlier bridge attempt overflowed it by exactly
-256 bytes.
+The normal ARM7 cardengine is packed into a `4 KiB + 0x80` linker region.
+The dedicated Pokebot build replaces the ARM7 TWiLight in-game-menu helper
+with a stub rather than enlarging that reserved region.
 
-The dedicated Pokebot build therefore disables the ARM7 TWiLight in-game-menu
-helper to make room instead of enlarging the linker region. This trade-off
-applies only when HeartGold is launched with the Pokebot bootstrap.
+This affects only the Pokebot Nightly test bootstrap.
 
-The normal TWiLight Release bootstrap remains untouched.
+## What v0p2 does not do yet
 
-## Important limitation
+v0p2 does not expose the mailbox to the Windows bot over Wi-Fi. Its purpose is
+to establish that the complete DS/TWL hardware chain works first.
 
-v0p1 is the **DS-side half** of the bridge. It does not yet contain the live
-ARM11/PC transport. The next stage connects this mailbox to the New 3DS
-TWL ARM11 side and then exposes the commands to the PC.
-
-This separation is intentional: it lets us validate the nds-bootstrap
-runtime changes before adding the much more sensitive TwlBg/RTCom payload.
-
-## Build
-
-GitHub Actions builds this branch remotely with the pinned devkitARM container.
-Because that older container's live Debian Bullseye mirrors have drifted, the
-workflow uses a dated Debian snapshot for the small host-side compiler needed
-to build nds-bootstrap's `lzss` utility.
-
-The artifact contains:
-
-- `nds-bootstrap-pokebot-v0p1.nds`
-- `INSTALL/_nds/nds-bootstrap-nightly.nds`
-- this README
-- `PROTOCOL.md`
-- `BUILD_MANIFEST.txt`
-
-## Installing for boot validation
-
-Do not overwrite your normal **release** bootstrap.
-
-1. Back up `/_nds/nds-bootstrap-nightly.nds` from the SD card if it exists.
-2. Copy `INSTALL/_nds/nds-bootstrap-nightly.nds` from the artifact to
-   `/_nds/nds-bootstrap-nightly.nds`.
-3. In TWiLight Menu++ per-game settings for HeartGold, select **Nightly**
-   nds-bootstrap.
-4. Boot HeartGold and verify title screen -> Continue -> overworld normally.
-5. Keep the normal Release bootstrap selected for every other game.
-
-At this stage the PC cannot yet issue PING/READ32/KEY_SET; this first hardware
-test is strictly a boot/regression check.
-
-Restoring the backed-up Nightly file returns TWiLight Menu++ to its previous
-state.
-
-## Source strategy
-
-The repository does not vendor nds-bootstrap. The workflow clones the exact
-pinned upstream commit and runs `apply_pokebot_patch.py`. This makes every
-change reviewable and prevents an upstream update from silently changing the
-test binary.
+After ZL -> A is confirmed, the next transport milestone is a bidirectional
+ARM11/ARM7 command channel suitable for `PING`, `READ32`, and timed input
+commands from the PC.
