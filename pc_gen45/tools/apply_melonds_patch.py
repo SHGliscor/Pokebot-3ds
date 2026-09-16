@@ -571,12 +571,17 @@ replace_once(
 
 replace_once(
     emu_instance_h,
-    """    void toggleAudioMute();
-    void updateFastForwardMute(bool fastForward);
+    """    QMutex renderLock;
+
+private:
 """,
-    """    void toggleAudioMute();
+    """    QMutex renderLock;
+
+    // Pokebot bot-session mute. Public bridge control, separate from the
+    // user's normal melonDS mute toggle.
     void setPokebotAudioEnabled(bool enabled) { audioMutedByPokebot.store(!enabled); }
-    void updateFastForwardMute(bool fastForward);
+
+private:
 """,
 )
 
