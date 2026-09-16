@@ -78,7 +78,6 @@ jobs:
           cmake -S . -B build-pokebot -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_STATIC=OFF \
-            -DMELONDS_EMBED_BUILD_INFO=ON \
             -DENABLE_LTO_RELEASE=OFF
 
       - name: Build melonDS
