@@ -1,118 +1,73 @@
-# Pokebot NDS mailbox protocol v0p1
+# Pokebot NDS protocol v0p2
 
-## Location
+## DS mailbox
 
-For NTR/SDK1 games the nds-bootstrap card-engine shared block starts at
-`0x027FFA0C`.
-
-Pokebot reserves only indexes 9 through 12:
+NTR/SDK1 shared base: `0x027FFA0C`
 
 | Index | DS address | Purpose |
 |---:|---:|---|
-| 9 | `0x027FFA30` | Control/tag + state |
+| 9 | `0x027FFA30` | Control/state |
 | 10 | `0x027FFA34` | Command |
-| 11 | `0x027FFA38` | DATA0 (argument/response) |
-| 12 | `0x027FFA3C` | DATA1 (argument/response) |
+| 11 | `0x027FFA38` | DATA0 |
+| 12 | `0x027FFA3C` | DATA1 |
 
-This boundary is deliberate. In the pinned nds-bootstrap source,
-`UNPATCHED_FUNCTION_LOCATION` starts at `0x027FFA40`, so the Pokebot
-mailbox must end at `0x027FFA3C`.
+The mailbox stops at `0x027FFA3C` because nds-bootstrap reserves
+`0x027FFA40` as `UNPATCHED_FUNCTION_LOCATION`.
 
-## Control word
+Protocol version: `0x00020000`.
 
-The upper 24 bits identify Pokebot:
+### Control values
 
-`0x504B4200`
+- READY: `0x504B4201`
+- REQ: `0x504B4202`
+- BUSY: `0x504B4203`
+- DONE: `0x504B4204`
+- ERR: `0x504B4205`
 
-The low byte is the state:
+### Commands
 
-| State | Value | Full control word |
-|---|---:|---:|
-| READY | 1 | `0x504B4201` |
-| REQ | 2 | `0x504B4202` |
-| BUSY | 3 | `0x504B4203` |
-| DONE | 4 | `0x504B4204` |
-| ERR | 5 | `0x504B4205` |
+- `0x01 PING` -> DATA0 = `0x504F4E47`
+- `0x02 KEY_SET` -> DATA0 key mask, DATA1 duration in VBlanks
+- `0x03 RELEASE_ALL`
+- `0x10 READ32` -> aligned, read-only DS RAM access
 
-Protocol version: `0x00010001`.
+Allowed READ32 range:
 
-A writer fills Command/DATA0/DATA1 and writes **REQ last**. ARM7 writes the
-response fields first and writes DONE or ERR last.
+`0x02000000..0x023FFFFC`
 
-## Commands
+There is no arbitrary RAM-write command.
 
-### 0x01 PING
+## v0p2 RTCom boot marker
 
-Arguments: none.
+If the bootloader completes all three TwlBg patch stages, it writes:
 
-Success:
-- DATA0 = `0x504F4E47` (PONG)
-- DATA1 = protocol version
-- control = DONE
+`0x52544332` (`RTC2`)
 
-### 0x02 KEY_SET
+to `0x027FFA34` immediately before HeartGold starts.
 
-Input:
-- DATA0 = low ten DS key bits to press
-- DATA1 = number of VBlanks to keep them pressed
+The cardengine consumes this marker on its first mailbox initialization and
+enables the v0p2 RTCom hardware proof. A failed RTCom install leaves the marker
+clear and does not block game boot.
 
-If DATA1 is zero it defaults to two VBlanks. Values above 120 are clamped to
-120, so a failed transport cannot leave a synthetic key held indefinitely.
+## v0p2 New-3DS test channel
 
-The mask uses the normal REG_KEYINPUT order:
+The TwlBg runtime patch publishes New-3DS ZL/ZR/Nub state through the legacy
+RTC COUNTER extension.
 
-| Bit | Button |
-|---:|---|
-| 0 | A |
-| 1 | B |
-| 2 | Select |
-| 3 | Start |
-| 4 | Right |
-| 5 | Left |
-| 6 | Up |
-| 7 | Down |
-| 8 | R |
-| 9 | L |
+The ARM7 cardengine reads its third byte:
 
-v0p1 does not synthesize X, Y, touch, lid state, or New-3DS-only buttons.
+- bit 1: ZR
+- bit 2: ZL
 
-### 0x03 RELEASE_ALL
+For v0p2 only, a rising ZL edge starts a three-VBlank synthetic A pulse.
 
-Clears every Pokebot-injected key immediately.
+This is a hardware validation command, not the final PC protocol.
 
-### 0x10 READ32
+## Safety
 
-Input:
-- DATA0 = aligned DS main-RAM address
-
-Allowed v0p1 range:
-
-`0x02000000 <= address <= 0x023FFFFC`
-
-Success:
-- DATA0 = 32-bit value
-- DATA1 = protocol version
-- control = DONE
-
-Unaligned/out-of-range requests return:
-- DATA0 = `0x00000002`
-- control = ERR
-
-v0p1 intentionally provides no arbitrary write command.
-
-## Dedicated-build space trade-off
-
-The stock ARM7 cardengine is packed into a `4 KiB + 0x80` linker region.
-The first bridge build exceeded that region by 256 bytes. Instead of extending
-the region into unknown neighbouring memory, the Pokebot build replaces the
-ARM7 TWiLight in-game-menu helper with a no-op stub.
-
-This affects only the dedicated Pokebot bootstrap. The normal TWiLight
-release/nightly binaries are not changed.
-
-## ARM11 mapping note
-
-The next-stage New 3DS TWL ARM11 payload can address the mailbox through the
-TWL DS-RAM mapping. The DS addresses above remain the protocol authority;
-ARM11 virtual addresses should be derived by the ARM11 implementation rather
-than hard-coded into PC software.
+- Synthetic DS keys auto-release.
+- ZL is edge-triggered, not repeated while held.
+- The RTCom installer is fail-open.
+- Normal TWiLight Release bootstrap is unchanged.
+- The dedicated Pokebot build still disables the ARM7 TWiLight in-game-menu
+  helper to remain inside the existing cardengine allocation.
