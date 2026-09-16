@@ -19,6 +19,8 @@ HG_STARTERS = {152, 155, 158}
 HG_STARTER_ORDER = (152, 155, 158)
 # Confirmed on HeartGold Europe v10 by the live three-starter RAM probe.
 HG_EU_STARTER_BASE = 0x022BBE84
+HG_EN_ANCHOR_PTR = 0x021D4158
+HG_STARTER_FROM_ANCHOR = 0x1BC00
 
 
 def load_species_names() -> dict[int, str]:
@@ -33,7 +35,7 @@ def mon_line(mon, names: dict[int, str]) -> str:
     name = names.get(mon.species, f"Species {mon.species}")
     ivs = "/".join(map(str, mon.ivs))
     shiny = " SHINY" if mon.shiny else ""
-    level = f" Lv{mon.level}" if mon.level else ""
+    level = ""  # Starter buffer party-status bytes are encrypted; do not show raw level.
     return (
         f"0x{mon.address:08X} {name}{level}{shiny} "
         f"PID={mon.pid:08X} SV={mon.shiny_value} "
@@ -72,6 +74,30 @@ def cmd_scan(args) -> int:
 
 
 
+def _read_u32(backend, address: int) -> int:
+    return int.from_bytes(backend.read_block(address, 4), "little")
+
+
+def _hgss_live_starter_base(backend) -> int | None:
+    """
+    Resolve the HGSS starter buffer from the game's runtime anchor.
+
+    Pokebot-NDS uses:
+        anchor = *(0x021D4158 + language_offset)
+        starter_data = anchor + 0x1BC00
+
+    English HG/SS uses language_offset 0. This explains the small address
+    movement observed between resets and avoids scanning all 4 MiB of RAM.
+    """
+    anchor = _read_u32(backend, HG_EN_ANCHOR_PTR)
+    if not (MAIN_RAM_BASE <= anchor < MAIN_RAM_BASE + MAIN_RAM_SIZE):
+        return None
+    base = anchor + HG_STARTER_FROM_ANCHOR
+    if not (MAIN_RAM_BASE <= base <= MAIN_RAM_BASE + MAIN_RAM_SIZE - PARTY_SIZE * 3):
+        return None
+    return base
+
+
 def _read_hgss_starter_triplet(backend, base: int):
     """Read and validate the three contiguous HGSS starter PartyPokemon structs."""
     raw = backend.read_block(base, PARTY_SIZE * 3)
@@ -83,6 +109,13 @@ def _read_hgss_starter_triplet(backend, base: int):
             return None
         mons.append(mon)
     return tuple(mons)
+
+
+def _read_hgss_live_starters(backend):
+    base = _hgss_live_starter_base(backend)
+    if base is None:
+        return None, None
+    return _read_hgss_starter_triplet(backend, base), base
 
 
 def _find_hgss_starter_triplet_in_ram(ram: bytes):
@@ -105,16 +138,27 @@ def _find_hgss_starter_triplet_in_ram(ram: bytes):
 
 
 def _locate_hgss_starters(backend, base_hint: int, *, allow_full_scan: bool = True):
+    # Preferred route: resolve the moving HGSS starter buffer from the live
+    # runtime anchor. This is a tiny 4-byte pointer read + 708-byte PK4 read.
+    try:
+        triplet, live_base = _read_hgss_live_starters(backend)
+    except (RuntimeError, TimeoutError):
+        triplet, live_base = None, None
+    if triplet is not None:
+        return triplet, live_base, "pointer"
+
+    # Diagnostic compatibility with a manually supplied/previously observed base.
     try:
         triplet = _read_hgss_starter_triplet(backend, base_hint)
     except (RuntimeError, TimeoutError):
         triplet = None
     if triplet is not None:
-        return triplet, base_hint, "fast"
+        return triplet, base_hint, "hint"
 
     if not allow_full_scan:
         return None, base_hint, "none"
 
+    # Last-resort diagnostic only. Normal hunting never reaches this path.
     ram = backend.read_block(MAIN_RAM_BASE, MAIN_RAM_SIZE)
     triplet = _find_hgss_starter_triplet_in_ram(ram)
     if triplet is None:
@@ -181,27 +225,46 @@ def _reach_hgss_starter_screen(
         backend.pulse("Start", 4)
         time.sleep(0.10)
 
-    while time.monotonic() < deadline:
-        # Hunting uses the confirmed HeartGold EU starter block directly.
-        # Do NOT scan all 4 MiB while navigating: that made every button press
-        # wait on a full RAM dump + PK4 scan.
-        mons = _read_hgss_starter_triplet(backend, base_hint)
-        resolved_base = base_hint
-        source = "fast"
+    fast_forward_enabled = False
+    if after_reset:
+        backend.set_fast_forward(True)
+        fast_forward_enabled = True
 
-        if mons is not None:
-            # Re-read after a short settling interval.  This replaces the
-            # Pokebot-NDS 9-frame wait and ensures all three PK4s are stable.
-            time.sleep(0.15)
-            stable = _read_hgss_starter_triplet(backend, resolved_base)
-            if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
-                return stable, resolved_base, source, time.monotonic() - cycle_started
+    try:
+        while time.monotonic() < deadline:
+            # Resolve the moving starter block through HGSS' runtime anchor.
+            # This avoids a 4 MiB scan and remains valid when the allocation
+            # shifts by a few bytes between resets.
+            try:
+                mons, resolved_base = _read_hgss_live_starters(backend)
+            except (RuntimeError, TimeoutError):
+                mons, resolved_base = None, None
+            source = "pointer"
 
-        # No valid 152/155/158 triplet exists yet, so it is safe to advance.
-        backend.pulse("A", 1)
-        time.sleep(input_interval)
+            if mons is not None and resolved_base is not None:
+                # Drop to normal speed before final target evaluation/hold.
+                if fast_forward_enabled:
+                    backend.set_fast_forward(False)
+                    fast_forward_enabled = False
 
-    return None, base_hint, "timeout", time.monotonic() - cycle_started
+                # Two stable reads protect against catching the game midway
+                # through writing the three generated PK4 structures.
+                time.sleep(0.03)
+                stable = _read_hgss_starter_triplet(backend, resolved_base)
+                if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
+                    return stable, resolved_base, source, time.monotonic() - cycle_started
+
+            # No valid trio yet: advance dialogue/title quickly.
+            backend.pulse("A", 2)
+            time.sleep(input_interval)
+
+        return None, base_hint, "timeout", time.monotonic() - cycle_started
+    finally:
+        if fast_forward_enabled:
+            try:
+                backend.set_fast_forward(False)
+            except Exception:
+                pass
 
 
 def cmd_hgss_starter_check(args) -> int:
@@ -435,7 +498,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--max-resets", type=int, default=0, help="0 = unlimited")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
-    s.add_argument("--boot-settle", type=float, default=0.55)
+    s.add_argument("--boot-settle", type=float, default=0.10)
     s.add_argument("--reset-delay-min", type=float, default=0.00)
     s.add_argument("--reset-delay-max", type=float, default=0.20)
     s.add_argument("--duplicate-jitter-step", type=float, default=0.40)
@@ -443,8 +506,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument(
         "--input-interval",
         type=float,
-        default=0.04,
-        help="Seconds between navigation button pulses (default: 0.04)",
+        default=0.015,
+        help="Seconds between navigation button pulses while fast-forwarding (default: 0.015)",
     )
     s.set_defaults(func=cmd_hgss_starter_hunt)
 
