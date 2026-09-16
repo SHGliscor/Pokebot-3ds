@@ -122,5 +122,8 @@ class MelonDSFileBackend(EmulatorBackend):
     def reset_input(self) -> None:
         self._request("RELEASE_ALL")
 
+    def set_fast_forward(self, enabled: bool) -> None:
+        self._request("FAST_FORWARD", 1 if enabled else 0)
+
     def reset_game(self) -> None:
         self._request("RESET")
