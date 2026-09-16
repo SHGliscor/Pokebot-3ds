@@ -35,14 +35,31 @@ class MelonDSFileBackend(EmulatorBackend):
 
         tmp = self.command_path.with_suffix(".tmp")
         tmp.write_text(line, encoding="utf-8", newline="\n")
-        os.replace(tmp, self.command_path)
+
+        # Lua polls command.tsv every emulated frame. On Windows, replacing a
+        # destination that Lua has open for the few microseconds needed to read
+        # it can raise WinError 5. Retry the atomic publish instead of crashing.
+        publish_deadline = time.monotonic() + min(self.timeout, 2.0)
+        while True:
+            try:
+                os.replace(tmp, self.command_path)
+                break
+            except PermissionError:
+                if time.monotonic() >= publish_deadline:
+                    raise TimeoutError(
+                        "Timed out publishing a command to the melonDS bridge "
+                        "(Windows file-sharing collision)."
+                    )
+                time.sleep(0.001)
 
         deadline = time.monotonic() + self.timeout
         while time.monotonic() < deadline:
             try:
                 raw = self.response_path.read_bytes()
-            except FileNotFoundError:
-                time.sleep(0.005)
+            except (FileNotFoundError, PermissionError):
+                # response.bin can also be momentarily locked while Lua is
+                # replacing/truncating it on Windows.
+                time.sleep(0.002)
                 continue
 
             nl = raw.find(b"\n")
