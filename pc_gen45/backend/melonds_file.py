@@ -125,5 +125,14 @@ class MelonDSFileBackend(EmulatorBackend):
     def set_fast_forward(self, enabled: bool) -> None:
         self._request("FAST_FORWARD", 1 if enabled else 0)
 
+    def set_display(self, enabled: bool) -> None:
+        # Legacy Lua/file bridge predates native headless display control.
+        # Keep compatibility without changing the user's emulator window.
+        return None
+
+    def set_audio(self, enabled: bool) -> None:
+        # Legacy Lua/file bridge predates native bot-only audio mute control.
+        return None
+
     def reset_game(self) -> None:
         self._request("RESET")
