@@ -55,10 +55,19 @@ jobs:
           cd pc_gen45
           python -m unittest discover -s tests -v
 
+      - name: Fetch HGSS sprite assets
+        run: |
+          set -eux
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/PokeAPI/sprites.git pokeapi-sprites
+          cd pokeapi-sprites
+          git sparse-checkout set sprites/pokemon/versions/generation-iv/heartgold-soulsilver
+          test -s sprites/pokemon/versions/generation-iv/heartgold-soulsilver/152.png
+          test -s sprites/pokemon/versions/generation-iv/heartgold-soulsilver/shiny/152.png
+
       - name: Smoke-check Python hunter
         run: |
           set -eux
-          python -m py_compile pc_gen45/pokebot_gen45.py pc_gen45/gen4/pk4.py pc_gen45/backend/backend.py pc_gen45/backend/melonds_file.py pc_gen45/backend/melonds_udp.py
+          python -m py_compile pc_gen45/pokebot_gen45.py pc_gen45/ui.py pc_gen45/stats_store.py pc_gen45/gen4/pk4.py pc_gen45/backend/backend.py pc_gen45/backend/melonds_file.py pc_gen45/backend/melonds_udp.py
           cd pc_gen45
           python pokebot_gen45.py --help >/dev/null
           python pokebot_gen45.py hgss-starter-hunt --help >/dev/null
@@ -112,7 +121,7 @@ jobs:
         run: |
           set -eux
           ROOT="artifact/Pokebot-Gen45-PC-HGSS-StarterHunter"
-          mkdir -p "$ROOT/emulator/lua" "$ROOT/bot/backend" "$ROOT/bot/gen4" "$ROOT/bot/data" "$ROOT/docs" "$ROOT/tools" "$ROOT/pokebot_ipc"
+          mkdir -p "$ROOT/emulator/lua" "$ROOT/bot/backend" "$ROOT/bot/gen4" "$ROOT/bot/data" "$ROOT/docs" "$ROOT/tools" "$ROOT/pokebot_ipc" "$ROOT/assets/sprites/hgss/normal" "$ROOT/assets/sprites/hgss/shiny"
 
           cp melonDS-lua/build-pokebot/melonDS.exe "$ROOT/emulator/melonDS.exe"
 
@@ -135,12 +144,21 @@ jobs:
           cp pc_gen45/melonds/pokebot_bridge.lua "$ROOT/emulator/lua/pokebot_bridge.lua"
 
           cp pc_gen45/pokebot_gen45.py "$ROOT/bot/"
+          cp pc_gen45/ui.py "$ROOT/bot/"
+          cp pc_gen45/stats_store.py "$ROOT/bot/"
           cp pc_gen45/backend/*.py "$ROOT/bot/backend/"
           cp pc_gen45/gen4/*.py "$ROOT/bot/gen4/"
           cp pc_gen45/data/species_gen4.json "$ROOT/bot/data/"
 
+          SPRITE_SRC="pokeapi-sprites/sprites/pokemon/versions/generation-iv/heartgold-soulsilver"
+          for i in $(seq 1 493); do
+            [ -f "$SPRITE_SRC/$i.png" ] && cp "$SPRITE_SRC/$i.png" "$ROOT/assets/sprites/hgss/normal/" || true
+            [ -f "$SPRITE_SRC/shiny/$i.png" ] && cp "$SPRITE_SRC/shiny/$i.png" "$ROOT/assets/sprites/hgss/shiny/" || true
+          done
+
           cp pc_gen45/README.md "$ROOT/docs/README.md"
           cp melonDS-lua/LICENSE "$ROOT/docs/MELONDS_GPLv3_LICENSE.txt"
+          printf '%s\n' 'HGSS sprite assets sourced from https://github.com/PokeAPI/sprites' > "$ROOT/docs/SPRITES_SOURCE.txt"
 
       - name: Add clean Windows launcher and docs
         shell: pwsh
@@ -153,90 +171,105 @@ jobs:
           setlocal
           cd /d "%~dp0"
 
+          where pyw >nul 2>nul
+          if %errorlevel%==0 (
+            start "" pyw -3 "%~dp0bot\ui.py"
+            exit /b 0
+          )
+
+          where pythonw >nul 2>nul
+          if %errorlevel%==0 (
+            start "" pythonw "%~dp0bot\ui.py"
+            exit /b 0
+          )
+
+          python "%~dp0bot\ui.py"
+          if errorlevel 1 pause
+          '@ | Set-Content -Encoding ASCII "$Root\Pokebot-Gen45.bat"
+
+          @'
+          @echo off
+          setlocal
+          cd /d "%~dp0\.."
+
           :menu
           cls
           echo ============================================================
-          echo Pokebot Gen45 PC - HGSS Starter Hunter
+          echo Pokebot Gen45 PC - Legacy / Diagnostics
           echo ============================================================
           echo.
           echo 1. Start melonDS
           echo 2. Check current HGSS starters
-          echo 3. Start HGSS shiny starter hunter
+          echo 3. Start console HGSS shiny starter hunter
           echo 4. Test Pokebot bridge
           echo 5. Test BACKGROUND A input
           echo 6. Scan ARM9 RAM
           echo 7. Legacy starter probe
-          echo 8. Open first-test instructions
-          echo 9. Display OFF
-          echo 10. Display ON
-          echo 11. Sound OFF
-          echo 12. Sound ON
+          echo 8. Display OFF
+          echo 9. Display ON
+          echo 10. Sound OFF
+          echo 11. Sound ON
           echo 0. Exit
           echo.
           set /p choice=Select an option: 
 
           if "%choice%"=="1" (
-            start "" "%~dp0emulator\melonDS.exe"
+            start "" "%~dp0..\emulator\melonDS.exe"
             goto menu
           )
           if "%choice%"=="2" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" hgss-starter-check
+            python "%~dp0..\bot\pokebot_gen45.py" hgss-starter-check
             pause
             goto menu
           )
           if "%choice%"=="3" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" hgss-starter-hunt
+            python "%~dp0..\bot\pokebot_gen45.py" hgss-starter-hunt
             pause
             goto menu
           )
           if "%choice%"=="4" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" ping
+            python "%~dp0..\bot\pokebot_gen45.py" ping
             pause
             goto menu
           )
           if "%choice%"=="5" (
-            echo Keep melonDS unfocused. This should press A in-game.
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" input-test --key A --frames 6
+            python "%~dp0..\bot\pokebot_gen45.py" input-test --key A --frames 6
             pause
             goto menu
           )
           if "%choice%"=="6" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" scan
+            python "%~dp0..\bot\pokebot_gen45.py" scan
             pause
             goto menu
           )
           if "%choice%"=="7" (
-            python "%~dp0bot\pokebot_gen45.py" --ipc "%~dp0pokebot_ipc" starter-probe
+            python "%~dp0..\bot\pokebot_gen45.py" starter-probe
             pause
             goto menu
           )
           if "%choice%"=="8" (
-            start "" notepad "%~dp0docs\FIRST_TEST.txt"
+            python "%~dp0..\bot\pokebot_gen45.py" display off
+            pause
             goto menu
           )
           if "%choice%"=="9" (
-            python "%~dp0bot\pokebot_gen45.py" display off
+            python "%~dp0..\bot\pokebot_gen45.py" display on
             pause
             goto menu
           )
           if "%choice%"=="10" (
-            python "%~dp0bot\pokebot_gen45.py" display on
+            python "%~dp0..\bot\pokebot_gen45.py" audio off
             pause
             goto menu
           )
           if "%choice%"=="11" (
-            python "%~dp0bot\pokebot_gen45.py" audio off
-            pause
-            goto menu
-          )
-          if "%choice%"=="12" (
-            python "%~dp0bot\pokebot_gen45.py" audio on
+            python "%~dp0..\bot\pokebot_gen45.py" audio on
             pause
             goto menu
           )
           if "%choice%"=="0" exit /b 0
           goto menu
-          '@ | Set-Content -Encoding ASCII "$Root\Pokebot-Gen45.bat"
+          '@ | Set-Content -Encoding ASCII "$Root\tools\Legacy-Console.bat"
 
           @'
           Pokebot Gen45 PC - HGSS Starter Hunter
@@ -249,17 +282,16 @@ jobs:
             pokebot_ipc\  bridge command/response files
 
           First test:
-          1. Run Pokebot-Gen45.bat.
-          2. Choose 1 to start melonDS.
-          3. Boot HeartGold Europe v10.
-          4. Do NOT load the Lua bridge for normal hunting.
-             The packaged melonDS.exe has a native localhost Pokebot bridge.
-          5. Return to Pokebot-Gen45.bat and choose 4 to test the bridge.
-             It should report Pokebot-native-v1.
-          6. Choose 5 while melonDS is NOT focused. It should press A in-game.
-          7. Open Elm's starter selection screen and choose 2.
-             It should show Chikorita, Cyndaquil and Totodile without selecting one.
-          8. If correct, choose 3 for the automatic shiny starter hunt.
+          1. Run Pokebot-Gen45.bat. It now opens the desktop UI.
+          2. In the UI, click Launch melonDS.
+          3. Boot HeartGold Europe v10 and load your save near Elm's starter machine.
+          4. Click Test Bridge. It should report Pokebot-native-v1.
+          5. Leave Starters selected, choose one or more starter targets, then Start Hunt.
+          6. Current Hunt shows normal + shiny HGSS sprites.
+          7. Recently Seen shows live PK4 details for the latest starters.
+          8. Session and lifetime statistics are written to Local AppData.
+          9. Wild and Static mode buttons are present now; their hunt engines are wired next.
+          10. tools\Legacy-Console.bat keeps the previous console diagnostics.
 
           Hunt presentation:
           - Option 3 automatically disables DS screen rendering while hunting.
@@ -289,7 +321,12 @@ jobs:
           test -s "$ROOT/emulator/melonDS.exe"
           test -s "$ROOT/emulator/lua/pokebot_bridge.lua"
           test -s "$ROOT/bot/pokebot_gen45.py"
+          test -s "$ROOT/bot/ui.py"
+          test -s "$ROOT/bot/stats_store.py"
+          test -s "$ROOT/assets/sprites/hgss/normal/152.png"
+          test -s "$ROOT/assets/sprites/hgss/shiny/152.png"
           test -s "$ROOT/docs/FIRST_TEST.txt"
+          test -s "$ROOT/tools/Legacy-Console.bat"
           test -d "$ROOT/pokebot_ipc"
 
           # Keep the top level intentionally clean: one launcher plus folders.
