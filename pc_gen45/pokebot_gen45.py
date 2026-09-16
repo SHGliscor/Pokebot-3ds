@@ -148,6 +148,7 @@ def _reach_hgss_starter_screen(
     after_reset: bool,
     reset_delay_min: float,
     reset_delay_max: float,
+    input_interval: float,
 ):
     """
     Reach the HGSS starter screen without ever pressing A after a valid starter
@@ -159,11 +160,10 @@ def _reach_hgss_starter_screen(
     structures between every input.
     """
     deadline = time.monotonic() + timeout
-    next_scan = time.monotonic()
 
     if after_reset:
         delay = random.uniform(reset_delay_min, reset_delay_max)
-        print(f"Boot RNG delay: {delay:.2f}s")
+        print(f"Boot RNG jitter: {delay:.2f}s")
         time.sleep(delay)
         # One Start is sufficient for the title screen; subsequent progression
         # uses A only so we cannot accidentally open the in-game Start menu.
@@ -171,13 +171,12 @@ def _reach_hgss_starter_screen(
         time.sleep(0.45)
 
     while time.monotonic() < deadline:
-        now = time.monotonic()
-        allow_scan = now >= next_scan
-        mons, resolved_base, source = _locate_hgss_starters(
-            backend, base_hint, allow_full_scan=allow_scan
-        )
-        if allow_scan:
-            next_scan = time.monotonic() + 2.0
+        # Hunting uses the confirmed HeartGold EU starter block directly.
+        # Do NOT scan all 4 MiB while navigating: that made every button press
+        # wait on a full RAM dump + PK4 scan.
+        mons = _read_hgss_starter_triplet(backend, base_hint)
+        resolved_base = base_hint
+        source = "fast"
 
         if mons is not None:
             # Re-read after a short settling interval.  This replaces the
@@ -188,8 +187,8 @@ def _reach_hgss_starter_screen(
                 return stable, resolved_base, source
 
         # No valid 152/155/158 triplet exists yet, so it is safe to advance.
-        backend.pulse("A", 2)
-        time.sleep(0.40)
+        backend.pulse("A", 1)
+        time.sleep(input_interval)
 
     return None, base_hint, "timeout"
 
@@ -251,6 +250,7 @@ def cmd_hgss_starter_hunt(args) -> int:
                 after_reset=after_reset,
                 reset_delay_min=args.reset_delay_min,
                 reset_delay_max=args.reset_delay_max,
+                input_interval=args.input_interval,
             )
             if mons is None:
                 backend.reset_input()
@@ -414,8 +414,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--max-resets", type=int, default=0, help="0 = unlimited")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
-    s.add_argument("--reset-delay-min", type=float, default=5.0)
-    s.add_argument("--reset-delay-max", type=float, default=10.0)
+    s.add_argument("--reset-delay-min", type=float, default=1.0)
+    s.add_argument("--reset-delay-max", type=float, default=2.5)
+    s.add_argument(
+        "--input-interval",
+        type=float,
+        default=0.12,
+        help="Seconds between navigation button pulses (default: 0.12)",
+    )
     s.set_defaults(func=cmd_hgss_starter_hunt)
 
     s = sub.add_parser("hash-rom")
