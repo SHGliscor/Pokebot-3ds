@@ -21,6 +21,7 @@ sol = ROOT / "sol/sol.hpp"
 cmake_qt = ROOT / "src/frontend/qt_sdl/CMakeLists.txt"
 script_h = ROOT / "src/frontend/qt_sdl/ScriptManager.h"
 emu_thread = ROOT / "src/frontend/qt_sdl/EmuThread.cpp"
+emu_lua = ROOT / "lua/core/emu.lua"
 
 replace_once(
     cpp,
@@ -53,6 +54,54 @@ replace_once(
 """,
     """    native.set_function("read_s32", &read_s32_le);
     native.set_function("read_block", &read_block);
+""",
+)
+
+replace_once(
+    cpp,
+    """    // reset current game
+    native.set_function("reset", []()
+    {
+        emuInstances[0]->getEmuThread()->emuReset();
+    });
+
+""",
+    """    // reset current game
+    native.set_function("reset", []()
+    {
+        emuInstances[0]->getEmuThread()->emuReset();
+    });
+
+    // Pokebot navigation can use melonDS' existing fast-forward path while
+    // booting through title/text, then restore normal speed before evaluating
+    // a generated target.
+    native.set_function("set_fast_forward", [](bool enabled)
+    {
+        emuInstances[0]->fastForwardToggled = enabled;
+    });
+
+""",
+)
+
+replace_once(
+    emu_lua,
+    """-- Resets current running game
+function emu.reset()
+    native.reset()
+end
+
+""",
+    """-- Resets current running game
+function emu.reset()
+    native.reset()
+end
+
+-- Enables/disables melonDS fast-forward.
+---@param enabled boolean
+function emu.setFastForward(enabled)
+    native.set_fast_forward(enabled)
+end
+
 """,
 )
 
@@ -127,4 +176,4 @@ replace_once(
 """,
 )
 
-print("Applied Pokebot melonDS RAM, background input, sol2 compiler, and Windows linker compatibility patches")
+print("Applied Pokebot melonDS RAM, background input, fast-forward, sol2 compiler, and Windows linker compatibility patches")
