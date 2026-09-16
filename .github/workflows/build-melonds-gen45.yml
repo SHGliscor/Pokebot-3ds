@@ -37,7 +37,7 @@ jobs:
             mingw-w64-ucrt-x86_64-enet
             mingw-w64-ucrt-x86_64-zstd
             mingw-w64-ucrt-x86_64-faad2
-            mingw-w64-ucrt-x86_64-lua
+            mingw-w64-ucrt-x86_64-lua54
             mingw-w64-ucrt-x86_64-qt6-base
             mingw-w64-ucrt-x86_64-qt6-svg
             mingw-w64-ucrt-x86_64-qt6-multimedia
@@ -78,7 +78,9 @@ jobs:
           cmake -S . -B build-pokebot -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_STATIC=OFF \
-            -DENABLE_LTO_RELEASE=OFF
+            -DENABLE_LTO_RELEASE=OFF \
+            -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
+            -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a
 
       - name: Build melonDS
         run: |
