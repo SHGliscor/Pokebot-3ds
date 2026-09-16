@@ -1,0 +1,77 @@
+name: Build Pokebot nds-bootstrap PoC
+
+on:
+  push:
+    branches:
+      - nds-bootstrap-pokebot-poc
+    paths:
+      - "nds_bootstrap_pokebot/**"
+      - ".github/workflows/build-nds-bootstrap-pokebot.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:20241104
+
+    steps:
+      - name: Checkout Pokebot staging branch
+        uses: actions/checkout@v4
+
+      - name: Install host tools
+        run: |
+          apt-get update
+          apt-get install -y git gcc p7zip-full python3
+          git config --global safe.directory '*'
+
+      - name: Clone pinned nds-bootstrap
+        run: |
+          git clone --recursive https://github.com/DS-Homebrew/nds-bootstrap.git nds-bootstrap
+          cd nds-bootstrap
+          git checkout 1585a242c80f78fc67cb49a7bfe55a24cc362785
+          git submodule update --init --recursive
+          test "$(git rev-parse HEAD)" = "1585a242c80f78fc67cb49a7bfe55a24cc362785"
+
+      - name: Apply Pokebot bridge patch
+        run: |
+          python3 nds_bootstrap_pokebot/apply_pokebot_patch.py nds-bootstrap
+          grep -q "pokebot_bridge_tick" nds-bootstrap/retail/cardengine/arm7/source/cardengine.c
+          grep -q "PB_CMD_READ32" nds-bootstrap/retail/cardengine/arm7/source/pokebot_bridge.c
+
+      - name: Build nds-bootstrap
+        working-directory: nds-bootstrap
+        run: |
+          gcc lzss.c -o /usr/local/bin/lzss
+          make package-nightly
+
+      - name: Package Pokebot test build
+        run: |
+          mkdir -p artifact/INSTALL/_nds
+          cp nds-bootstrap/bin/nds-bootstrap-nightly.nds artifact/INSTALL/_nds/nds-bootstrap-nightly.nds
+          cp nds-bootstrap/bin/nds-bootstrap-nightly.nds artifact/nds-bootstrap-pokebot-v0p1.nds
+          cp nds_bootstrap_pokebot/README.md artifact/README.md
+          cp nds_bootstrap_pokebot/PROTOCOL.md artifact/PROTOCOL.md
+
+          cat > artifact/BUILD_MANIFEST.txt <<'EOF'
+          Pokebot nds-bootstrap proof-of-concept v0p1
+          Target: New Nintendo 3DS
+          Test game: Pokemon HeartGold (Europe)
+          ROM SHA1: EB47AB4BA0326AE842135F62C7EC68CF85C9785F
+          nds-bootstrap upstream commit: 1585a242c80f78fc67cb49a7bfe55a24cc362785
+          Commands implemented on DS side:
+            0x01 PING
+            0x02 KEY_SET (timed; fail-safe auto release)
+            0x03 RELEASE_ALL
+            0x10 READ32 (0x02000000..0x023FFFFC, aligned, read-only)
+          PC/ARM11 live transport: not yet included in v0p1
+          EOF
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pokebot-nds-bootstrap-v0p1
+          path: artifact/
+          if-no-files-found: error
