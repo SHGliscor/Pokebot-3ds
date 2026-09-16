@@ -224,12 +224,13 @@ replace_once(
 
 #include "ScriptManager.h"
 """,
-    """#include <InputConfig/InputConfigDialog.h>
-
-#ifdef _WIN32
+    """#ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #endif
+
+#include <InputConfig/InputConfigDialog.h>
+
 #include <algorithm>
 #include <array>
 #include <cstring>
