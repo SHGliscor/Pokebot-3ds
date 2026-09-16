@@ -534,6 +534,33 @@ replace_once(
 
 
 replace_once(
+    emu_thread,
+    """            emuInstance->drawScreen(); // ui
+""",
+    """            if (scriptManager.pokebotDisplayEnabled())
+                emuInstance->drawScreen(); // ui
+""",
+)
+
+replace_once(
+    emu_thread,
+    """            if (winUpdateCount >= winUpdateFreq && !useOpenGL)
+            {
+                emit windowUpdate();
+                winUpdateCount = 0;
+            }
+""",
+    """            if (winUpdateCount >= winUpdateFreq && !useOpenGL)
+            {
+                if (scriptManager.pokebotDisplayEnabled())
+                    emit windowUpdate();
+                winUpdateCount = 0;
+            }
+""",
+)
+
+
+replace_once(
     emu_instance_h,
     """#include <SDL2/SDL.h>
 """,
