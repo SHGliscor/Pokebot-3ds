@@ -149,6 +149,8 @@ def _reach_hgss_starter_screen(
     reset_delay_min: float,
     reset_delay_max: float,
     input_interval: float,
+    boot_settle: float,
+    jitter_boost: float = 0.0,
 ):
     """
     Reach the HGSS starter screen without ever pressing A after a valid starter
@@ -159,16 +161,25 @@ def _reach_hgss_starter_screen(
     mitigation), press Start once, then pulse A while validating the starter
     structures between every input.
     """
-    deadline = time.monotonic() + timeout
+    cycle_started = time.monotonic()
+    deadline = cycle_started + timeout
 
     if after_reset:
-        delay = random.uniform(reset_delay_min, reset_delay_max)
-        print(f"Boot RNG jitter: {delay:.2f}s")
-        time.sleep(delay)
-        # One Start is sufficient for the title screen; subsequent progression
-        # uses A only so we cannot accidentally open the in-game Start menu.
-        backend.pulse("Start", 2)
-        time.sleep(0.45)
+        # Keep only a small randomized component by default. If repeated
+        # starter sets are actually detected, the caller increases jitter.
+        jitter = random.uniform(reset_delay_min, reset_delay_max) + jitter_boost
+        if boot_settle > 0:
+            time.sleep(boot_settle)
+        if jitter > 0:
+            time.sleep(jitter)
+        print(
+            f"Boot settle={boot_settle:.2f}s RNG jitter={jitter:.2f}s"
+            + (f" (adaptive +{jitter_boost:.2f}s)" if jitter_boost else "")
+        )
+        # Use a slightly longer Start pulse so it is reliably accepted as soon
+        # as the title screen becomes responsive.
+        backend.pulse("Start", 4)
+        time.sleep(0.10)
 
     while time.monotonic() < deadline:
         # Hunting uses the confirmed HeartGold EU starter block directly.
@@ -184,13 +195,13 @@ def _reach_hgss_starter_screen(
             time.sleep(0.15)
             stable = _read_hgss_starter_triplet(backend, resolved_base)
             if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
-                return stable, resolved_base, source
+                return stable, resolved_base, source, time.monotonic() - cycle_started
 
         # No valid 152/155/158 triplet exists yet, so it is safe to advance.
         backend.pulse("A", 1)
         time.sleep(input_interval)
 
-    return None, base_hint, "timeout"
+    return None, base_hint, "timeout", time.monotonic() - cycle_started
 
 
 def cmd_hgss_starter_check(args) -> int:
@@ -238,12 +249,14 @@ def cmd_hgss_starter_hunt(args) -> int:
     seen_sets: set[tuple[tuple[int, int, int], ...]] = set()
     sets_seen = 0
     duplicates = 0
+    duplicate_streak = 0
     resets = 0
     after_reset = False
 
     try:
         while True:
-            mons, resolved_base, source = _reach_hgss_starter_screen(
+            jitter_boost = min(duplicate_streak * args.duplicate_jitter_step, args.duplicate_jitter_max)
+            mons, resolved_base, source, cycle_seconds = _reach_hgss_starter_screen(
                 backend,
                 base_hint=base_hint,
                 timeout=args.navigation_timeout,
@@ -251,6 +264,8 @@ def cmd_hgss_starter_hunt(args) -> int:
                 reset_delay_min=args.reset_delay_min,
                 reset_delay_max=args.reset_delay_max,
                 input_interval=args.input_interval,
+                boot_settle=args.boot_settle,
+                jitter_boost=jitter_boost,
             )
             if mons is None:
                 backend.reset_input()
@@ -258,12 +273,18 @@ def cmd_hgss_starter_hunt(args) -> int:
                 print("No further input or resets will be sent.")
                 return 3
 
+            print(f"Starter screen reacquired in {cycle_seconds:.2f}s.")
             base_hint = resolved_base
             identity = _starter_set_identity(mons)
             if identity in seen_sets:
                 duplicates += 1
-                print(f"Duplicate starter set detected (duplicate #{duplicates}).")
+                duplicate_streak += 1
+                print(
+                    f"Duplicate starter set detected (duplicate #{duplicates}, "
+                    f"streak {duplicate_streak})."
+                )
             else:
+                duplicate_streak = 0
                 seen_sets.add(identity)
                 sets_seen += 1
                 print(
@@ -414,13 +435,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--max-resets", type=int, default=0, help="0 = unlimited")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
-    s.add_argument("--reset-delay-min", type=float, default=1.0)
-    s.add_argument("--reset-delay-max", type=float, default=2.5)
+    s.add_argument("--boot-settle", type=float, default=0.55)
+    s.add_argument("--reset-delay-min", type=float, default=0.00)
+    s.add_argument("--reset-delay-max", type=float, default=0.20)
+    s.add_argument("--duplicate-jitter-step", type=float, default=0.40)
+    s.add_argument("--duplicate-jitter-max", type=float, default=2.00)
     s.add_argument(
         "--input-interval",
         type=float,
-        default=0.12,
-        help="Seconds between navigation button pulses (default: 0.12)",
+        default=0.04,
+        help="Seconds between navigation button pulses (default: 0.04)",
     )
     s.set_defaults(func=cmd_hgss_starter_hunt)
 
