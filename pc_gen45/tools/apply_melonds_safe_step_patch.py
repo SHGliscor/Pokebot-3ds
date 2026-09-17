@@ -41,9 +41,9 @@ replace_once(
     melonDS::u32 pokebotStepXAddr = 0;
     melonDS::u32 pokebotStepZAddr = 0;
     melonDS::u32 pokebotStepMapAddr = 0;
-    melonDS::u32 pokebotStepExpectedMap = 0;
-    melonDS::u32 pokebotStepStartX = 0;
-    melonDS::u32 pokebotStepStartZ = 0;
+    melonDS::u16 pokebotStepExpectedMap = 0;
+    melonDS::u16 pokebotStepStartX = 0;
+    melonDS::u16 pokebotStepStartZ = 0;
     unsigned pokebotStepFramesLeft = 0;
 
     // reset variables, callbacks
@@ -75,14 +75,14 @@ replace_once(
             luaInputMask.fetch_or(1u << bit);
     }
 
-    // SAFE_STEP guard runs before applying the next frame's input mask. Once
-    // X/Z changes by the first tile, the direction is released immediately.
-    // A map transition or frame-budget expiry also releases the key.
+    // SAFE_STEP guard runs before applying the next frame's input mask. HGSS
+    // map headers and overworld coordinate values are low-16-bit fields, so
+    // the guard deliberately ignores unrelated neighboring bytes.
     if (pokebotStepActive && nds)
     {
-        const melonDS::u32 currentMap = nds->ARM9Read32(pokebotStepMapAddr);
-        const melonDS::u32 currentX = nds->ARM9Read32(pokebotStepXAddr);
-        const melonDS::u32 currentZ = nds->ARM9Read32(pokebotStepZAddr);
+        const melonDS::u16 currentMap = nds->ARM9Read16(pokebotStepMapAddr);
+        const melonDS::u16 currentX = nds->ARM9Read16(pokebotStepXAddr);
+        const melonDS::u16 currentZ = nds->ARM9Read16(pokebotStepZAddr);
 
         bool stopStep = currentMap != pokebotStepExpectedMap ||
                         currentX != pokebotStepStartX ||
@@ -186,10 +186,10 @@ replace_once(
             const melonDS::u32 xAddr = read32(req.data() + 10);
             const melonDS::u32 zAddr = read32(req.data() + 14);
             const melonDS::u32 mapAddr = read32(req.data() + 18);
-            const melonDS::u32 expectedMap = read32(req.data() + 22);
+            const melonDS::u32 expectedMap32 = read32(req.data() + 22);
             const unsigned maxFrames = read16(req.data() + 26);
 
-            if (bit < 4 || bit > 7 || maxFrames < 1 || maxFrames > 600)
+            if (bit < 4 || bit > 7 || expectedMap32 > 0xFFFF || maxFrames < 1 || maxFrames > 600)
             {
                 fail("bad SAFE_STEP args");
                 break;
@@ -199,7 +199,9 @@ replace_once(
                 fail("SAFE_STEP busy");
                 break;
             }
-            if (nds->ARM9Read32(mapAddr) != expectedMap)
+
+            const melonDS::u16 expectedMap = static_cast<melonDS::u16>(expectedMap32);
+            if (nds->ARM9Read16(mapAddr) != expectedMap)
             {
                 fail("SAFE_STEP map mismatch");
                 break;
@@ -210,8 +212,8 @@ replace_once(
             pokebotStepZAddr = zAddr;
             pokebotStepMapAddr = mapAddr;
             pokebotStepExpectedMap = expectedMap;
-            pokebotStepStartX = nds->ARM9Read32(xAddr);
-            pokebotStepStartZ = nds->ARM9Read32(zAddr);
+            pokebotStepStartX = nds->ARM9Read16(xAddr);
+            pokebotStepStartZ = nds->ARM9Read16(zAddr);
             pokebotStepFramesLeft = maxFrames;
             pokebotStepActive = true;
 

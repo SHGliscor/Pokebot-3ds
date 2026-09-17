@@ -93,8 +93,12 @@ class MelonDSUDPBackend(EmulatorBackend):
         except KeyError as exc:
             raise ValueError(f"unsupported DS key: {key}") from exc
 
-    def _read_u32(self, address: int) -> int:
-        return int.from_bytes(self.read_block(address, 4), "little")
+    def _read_u16(self, address: int) -> int:
+        return int.from_bytes(self.read_block(address, 2), "little")
+
+    def _read_s16(self, address: int) -> int:
+        value = self._read_u16(address)
+        return value - 0x10000 if value & 0x8000 else value
 
     def set_key(self, key: str, pressed: bool) -> None:
         self._request(3, bytes([self._key_bit(key), 1 if pressed else 0]))
@@ -133,11 +137,12 @@ class MelonDSUDPBackend(EmulatorBackend):
         """
         Move exactly one overworld tile with a native per-frame release guard.
 
+        HGSS map IDs are u16 and overworld X/Z coordinates are signed s16.
         Command 10 keeps the requested D-pad direction held only until the first
-        observed X/Z coordinate transition, a map change, or max_frames expiry.
+        observed low-16-bit X/Z transition, a map change, or max_frames expiry.
         Python then verifies that the movement was exactly one tile and that the
-        map did not change. This is safe at unthrottled melonDS speeds because
-        the release decision happens inside the emulator frame loop.
+        map did not change. This remains safe at unthrottled melonDS speeds
+        because the release decision happens inside the emulator frame loop.
         """
         key = key.upper()
         if key not in {"UP", "DOWN", "LEFT", "RIGHT"}:
@@ -146,10 +151,12 @@ class MelonDSUDPBackend(EmulatorBackend):
             raise ValueError("max_frames must be 1..600")
         if timeout <= 0:
             raise ValueError("timeout must be positive")
+        if not (0 <= expected_map <= 0xFFFF):
+            raise ValueError("expected_map must fit HGSS u16 map header")
 
-        start_map = self._read_u32(map_addr)
-        start_x = self._read_u32(x_addr)
-        start_z = self._read_u32(z_addr)
+        start_map = self._read_u16(map_addr)
+        start_x = self._read_s16(x_addr)
+        start_z = self._read_s16(z_addr)
         if start_map != expected_map:
             raise RuntimeError(
                 f"map changed before guarded step: expected {expected_map}, got {start_map}"
@@ -161,16 +168,16 @@ class MelonDSUDPBackend(EmulatorBackend):
             x_addr & 0xFFFFFFFF,
             z_addr & 0xFFFFFFFF,
             map_addr & 0xFFFFFFFF,
-            expected_map & 0xFFFFFFFF,
+            expected_map,
             max_frames,
         )
         self._request(10, payload)
 
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            current_map = self._read_u32(map_addr)
-            current_x = self._read_u32(x_addr)
-            current_z = self._read_u32(z_addr)
+            current_map = self._read_u16(map_addr)
+            current_x = self._read_s16(x_addr)
+            current_z = self._read_s16(z_addr)
 
             if current_map != expected_map:
                 self.reset_input()

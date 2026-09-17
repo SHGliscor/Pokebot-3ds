@@ -23,7 +23,7 @@ class FakeBackend(MelonDSUDPBackend):
     def read_block(self, address, length):
         values = self.values[address]
         value = values.pop(0) if len(values) > 1 else values[0]
-        return int(value).to_bytes(4, "little")
+        return int(value & 0xFFFF).to_bytes(2, "little")[:length]
 
     def reset_input(self):
         self.released = True
@@ -60,6 +60,26 @@ class GuardedStepTests(unittest.TestCase):
             (4, X_ADDR, Z_ADDR, MAP_ADDR, 7, 90),
         )
         self.assertFalse(backend.released)
+
+    def test_signed_coordinate_crossing_is_one_tile(self):
+        backend = FakeBackend(
+            {
+                MAP_ADDR: [7, 7],
+                X_ADDR: [-1, 0],
+                Z_ADDR: [20, 20],
+            }
+        )
+        self.assertEqual(
+            backend.guarded_step(
+                "RIGHT",
+                x_addr=X_ADDR,
+                z_addr=Z_ADDR,
+                map_addr=MAP_ADDR,
+                expected_map=7,
+                timeout=0.1,
+            ),
+            (0, 20),
+        )
 
     def test_map_change_releases_and_fails(self):
         backend = FakeBackend(

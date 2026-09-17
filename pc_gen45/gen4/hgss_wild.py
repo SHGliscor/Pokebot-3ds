@@ -13,13 +13,27 @@ def _read_u32(backend, address: int) -> int:
     return int.from_bytes(backend.read_block(address, 4), "little")
 
 
+def _read_u16(backend, address: int) -> int:
+    return int.from_bytes(backend.read_block(address, 2), "little")
+
+
+def _read_s16(backend, address: int) -> int:
+    value = _read_u16(backend, address)
+    return value - 0x10000 if value & 0x8000 else value
+
+
 def read_hgss_english_position(backend) -> tuple[Position, int]:
     """Return live HGSS map/X/Z plus the dynamic map-header address."""
     anchor = _read_u32(backend, HG_EN_ANCHOR_PTR)
     map_addr = anchor + HG_MAP_HEADER_FROM_ANCHOR
-    map_id = _read_u32(backend, map_addr)
-    x = _read_u32(backend, HG_EN_TRAINER_X)
-    z = _read_u32(backend, HG_EN_TRAINER_Z)
+
+    # HGSS stores the map header as a u16. PokeBot-NDS likewise reads it with
+    # mword(), while trainer coordinates are the signed low 16 bits of the
+    # game's coordinate words. Reading wider would consume unrelated adjacent
+    # state and can produce false map-change or multi-tile safety holds.
+    map_id = _read_u16(backend, map_addr)
+    x = _read_s16(backend, HG_EN_TRAINER_X)
+    z = _read_s16(backend, HG_EN_TRAINER_Z)
     return Position(map_id, x, z), map_addr
 
 

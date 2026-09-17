@@ -8,6 +8,7 @@ from gen4.hgss_wild import (
     HG_EN_TRAINER_Z,
     HG_MAP_HEADER_FROM_ANCHOR,
     HGSSEnglishGrassLock,
+    read_hgss_english_position,
 )
 from gen4.wild_navigation import Position, UnsafeStep
 
@@ -23,16 +24,16 @@ class FakeBackend:
 
     def read_block(self, address, length):
         if address == HG_EN_ANCHOR_PTR:
-            value = self.anchor
+            raw = self.anchor.to_bytes(4, "little")
         elif address == HG_EN_TRAINER_X:
-            value = self.x
+            raw = (self.x & 0xFFFF).to_bytes(2, "little") + b"\x12\x34"
         elif address == HG_EN_TRAINER_Z:
-            value = self.z
+            raw = (self.z & 0xFFFF).to_bytes(2, "little") + b"\x56\x78"
         elif address == self.anchor + HG_MAP_HEADER_FROM_ANCHOR:
-            value = self.map_id
+            raw = self.map_id.to_bytes(2, "little") + b"\xAA\xBB"
         else:
             raise AssertionError(hex(address))
-        return int(value).to_bytes(4, "little")
+        return raw[:length]
 
     def guarded_step(self, key, **kwargs):
         self.steps.append((key, kwargs))
@@ -51,6 +52,13 @@ class FakeBackend:
 
 
 class GrassLockTests(unittest.TestCase):
+    def test_position_uses_u16_map_and_signed_s16_coordinates(self):
+        backend = FakeBackend()
+        backend.x = -3
+        backend.z = 20
+        position, _ = read_hgss_english_position(backend)
+        self.assertEqual(position, Position(33, -3, 20))
+
     def test_start_uses_connected_component_and_step_stays_inside(self):
         backend = FakeBackend()
         lock = HGSSEnglishGrassLock(backend, {(10, 10), (11, 10), (99, 99)})
