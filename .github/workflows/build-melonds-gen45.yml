@@ -88,6 +88,12 @@ jobs:
         run: |
           set -eux
           python pc_gen45/tools/apply_melonds_patch.py melonDS-lua
+          grep -q 'doLimitFPS = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'doAudioSync = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'JITArgs _jitargs' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q '32u,' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'vsync = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q '.Threaded = true,' melonDS-lua/src/frontend/qt_sdl/EmuThread.cpp
           cp pc_gen45/melonds/pokebot_bridge.lua melonDS-lua/lua/pokebot_bridge.lua
           grep -q 'read_block' melonDS-lua/lua/core/memory.lua
           grep -q 'native.set_function("read_block"' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
@@ -107,7 +113,9 @@ jobs:
             -DBUILD_STATIC=OFF \
             -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
             -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a \
-            -DENABLE_LTO_RELEASE=OFF \
+            -DENABLE_JIT=ON \
+            -DENABLE_OGLRENDERER=ON \
+            -DENABLE_LTO_RELEASE=ON \
             -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
             -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a
 
