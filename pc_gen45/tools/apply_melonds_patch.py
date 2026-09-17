@@ -23,6 +23,7 @@ script_h = ROOT / "src/frontend/qt_sdl/ScriptManager.h"
 emu_thread = ROOT / "src/frontend/qt_sdl/EmuThread.cpp"
 emu_lua = ROOT / "lua/core/emu.lua"
 emu_instance_h = ROOT / "src/frontend/qt_sdl/EmuInstance.h"
+emu_instance_cpp = ROOT / "src/frontend/qt_sdl/EmuInstance.cpp"
 emu_audio = ROOT / "src/frontend/qt_sdl/EmuInstanceAudio.cpp"
 
 replace_once(
@@ -560,6 +561,80 @@ replace_once(
 )
 
 
+# Pokebot PC builds are dedicated automation builds. Run the emulator core
+# unthrottled by default and force the fastest safe x64 JIT profile. The bot
+# uses wall-clock key holds, so input pulse length no longer depends on FPS.
+replace_once(
+    emu_instance_cpp,
+    """    doLimitFPS = globalCfg.GetBool("LimitFPS");
+""",
+    """    // Pokebot turbo profile: never sleep to enforce a display FPS cap.
+    doLimitFPS = false;
+""",
+)
+
+replace_once(
+    emu_instance_cpp,
+    """    double val = globalCfg.GetDouble("TargetFPS");
+""",
+    """    // 1000 is used only for melonDS timing/accounting when unthrottled;
+    // with doLimitFPS=false the core runs as fast as the host can execute it.
+    double val = 1000.0;
+""",
+)
+
+replace_once(
+    emu_instance_cpp,
+    """    val = globalCfg.GetDouble("FastForwardFPS");
+""",
+    """    val = 1000.0;
+""",
+)
+
+replace_once(
+    emu_instance_cpp,
+    """    doAudioSync = globalCfg.GetBool("AudioSync");
+""",
+    """    // Audio sync is another independent real-time throttle.
+    doAudioSync = false;
+""",
+)
+
+replace_once(
+    emu_instance_cpp,
+    """#ifdef JIT_ENABLED
+    Config::Table jitopt = globalCfg.GetTable("JIT");
+    JITArgs _jitargs {
+            static_cast<unsigned>(jitopt.GetInt("MaxBlockSize")),
+            jitopt.GetBool("LiteralOptimisations"),
+            jitopt.GetBool("BranchOptimisations"),
+            jitopt.GetBool("FastMemory"),
+    };
+    auto jitargs = jitopt.GetBool("Enable") ? std::make_optional(_jitargs) : std::nullopt;
+#else
+""",
+    """#ifdef JIT_ENABLED
+    // Dedicated Pokebot build: JIT is always enabled at its maximum supported
+    // block size, with the x64 fast-memory and both optimizer passes enabled.
+    JITArgs _jitargs {
+            32u,
+            true,   // LiteralOptimisations
+            true,   // BranchOptimisations
+            true,   // FastMemory
+    };
+    auto jitargs = std::make_optional(_jitargs);
+#else
+""",
+)
+
+replace_once(
+    emu_thread,
+    """.Threaded = cfg.GetBool("3D.Soft.Threaded"),
+""",
+    """.Threaded = true,
+""",
+)
+
 replace_once(
     emu_instance_h,
     """#include <SDL2/SDL.h>
@@ -619,4 +694,4 @@ replace_once(
 """,
 )
 
-print("Applied Pokebot native UDP, RAM, background input, headless display, audio mute, fast-forward, sol2 compiler, and Windows linker compatibility patches")
+print("Applied Pokebot native UDP, RAM, background input, maximum-speed JIT/unthrottled core, headless display, audio mute, fast-forward, sol2 compiler, and Windows linker compatibility patches")
