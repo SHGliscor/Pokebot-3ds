@@ -113,9 +113,9 @@ class StarterHuntWorker(threading.Thread):
                     timeout=45.0,
                     after_reset=after_reset,
                     reset_delay_min=0.0,
-                    reset_delay_max=0.20,
-                    input_interval=0.035,
-                    boot_settle=0.35,
+                    reset_delay_max=0.01,
+                    input_interval=0.010,
+                    boot_settle=0.02,
                     jitter_boost=jitter_boost,
                     stop_check=self.stop_event.is_set,
                 )
