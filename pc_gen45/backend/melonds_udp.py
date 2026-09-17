@@ -93,6 +93,9 @@ class MelonDSUDPBackend(EmulatorBackend):
         except KeyError as exc:
             raise ValueError(f"unsupported DS key: {key}") from exc
 
+    def _read_u32(self, address: int) -> int:
+        return int.from_bytes(self.read_block(address, 4), "little")
+
     def set_key(self, key: str, pressed: bool) -> None:
         self._request(3, bytes([self._key_bit(key), 1 if pressed else 0]))
 
@@ -115,3 +118,77 @@ class MelonDSUDPBackend(EmulatorBackend):
 
     def set_audio(self, enabled: bool) -> None:
         self._request(9, bytes([1 if enabled else 0]))
+
+    def guarded_step(
+        self,
+        key: str,
+        *,
+        x_addr: int,
+        z_addr: int,
+        map_addr: int,
+        expected_map: int,
+        max_frames: int = 120,
+        timeout: float = 1.5,
+    ) -> tuple[int, int]:
+        """
+        Move exactly one overworld tile with a native per-frame release guard.
+
+        Command 10 keeps the requested D-pad direction held only until the first
+        observed X/Z coordinate transition, a map change, or max_frames expiry.
+        Python then verifies that the movement was exactly one tile and that the
+        map did not change. This is safe at unthrottled melonDS speeds because
+        the release decision happens inside the emulator frame loop.
+        """
+        key = key.upper()
+        if key not in {"UP", "DOWN", "LEFT", "RIGHT"}:
+            raise ValueError("guarded_step only supports D-pad directions")
+        if not (1 <= max_frames <= 600):
+            raise ValueError("max_frames must be 1..600")
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+
+        start_map = self._read_u32(map_addr)
+        start_x = self._read_u32(x_addr)
+        start_z = self._read_u32(z_addr)
+        if start_map != expected_map:
+            raise RuntimeError(
+                f"map changed before guarded step: expected {expected_map}, got {start_map}"
+            )
+
+        payload = struct.pack(
+            "<BIIIIH",
+            self._key_bit(key),
+            x_addr & 0xFFFFFFFF,
+            z_addr & 0xFFFFFFFF,
+            map_addr & 0xFFFFFFFF,
+            expected_map & 0xFFFFFFFF,
+            max_frames,
+        )
+        self._request(10, payload)
+
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            current_map = self._read_u32(map_addr)
+            current_x = self._read_u32(x_addr)
+            current_z = self._read_u32(z_addr)
+
+            if current_map != expected_map:
+                self.reset_input()
+                raise RuntimeError(
+                    f"map changed during guarded step: expected {expected_map}, got {current_map}"
+                )
+
+            if current_x != start_x or current_z != start_z:
+                distance = abs(current_x - start_x) + abs(current_z - start_z)
+                if distance != 1:
+                    self.reset_input()
+                    raise RuntimeError(
+                        "guarded step moved more than one tile: "
+                        f"{(start_x, start_z)} -> {(current_x, current_z)}"
+                    )
+                return current_x, current_z
+
+            time.sleep(0.001)
+
+        self.reset_input()
+        raise TimeoutError("guarded step timed out before a one-tile coordinate change")
