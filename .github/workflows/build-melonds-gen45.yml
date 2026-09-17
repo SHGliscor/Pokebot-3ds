@@ -1,0 +1,354 @@
+name: Build Pokebot Gen45 PC melonDS
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'pc_gen45/**'
+      - '.github/workflows/build-melonds-gen45.yml'
+
+jobs:
+  build:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout Pokebot repo
+        uses: actions/checkout@v4
+
+      - name: Set up MSYS2 UCRT64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-python
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-libarchive
+            mingw-w64-ucrt-x86_64-enet
+            mingw-w64-ucrt-x86_64-zstd
+            mingw-w64-ucrt-x86_64-faad2
+            mingw-w64-ucrt-x86_64-lua54
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-svg
+            mingw-w64-ucrt-x86_64-qt6-multimedia
+            mingw-w64-ucrt-x86_64-qt6-tools
+
+      - name: Generate pret-backed Gen4 data
+        run: |
+          set -eux
+          python pc_gen45/tools/import_pret_gen4.py
+          test -s pc_gen45/data/species_gen4.json
+          test -s pc_gen45/data/abilities_gen4.json
+
+      - name: Run PK4 unit tests
+        run: |
+          set -eux
+          cd pc_gen45
+          python -m unittest discover -s tests -v
+
+      - name: Fetch HGSS sprite assets
+        run: |
+          set -eux
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/PokeAPI/sprites.git pokeapi-sprites
+          cd pokeapi-sprites
+          git sparse-checkout set sprites/pokemon/versions/generation-iv/heartgold-soulsilver
+          test -s sprites/pokemon/versions/generation-iv/heartgold-soulsilver/152.png
+          test -s sprites/pokemon/versions/generation-iv/heartgold-soulsilver/shiny/152.png
+
+      - name: Smoke-check Python hunter
+        run: |
+          set -eux
+          python -m py_compile pc_gen45/pokebot_gen45.py pc_gen45/ui.py pc_gen45/stats_store.py pc_gen45/gen4/pk4.py pc_gen45/backend/backend.py pc_gen45/backend/melonds_file.py pc_gen45/backend/melonds_udp.py
+          cd pc_gen45
+          python pokebot_gen45.py --help >/dev/null
+          python pokebot_gen45.py hgss-starter-hunt --help >/dev/null
+          python pokebot_gen45.py input-test --help >/dev/null
+          python pokebot_gen45.py display --help >/dev/null
+          python pokebot_gen45.py audio --help >/dev/null
+
+      - name: Fetch pinned melonDS-Lua
+        run: |
+          set -eux
+          git clone https://github.com/Veddy1674/melonDS-lua.git melonDS-lua
+          cd melonDS-lua
+          git checkout 8d7891ade565fae44256eb0400581517261544aa
+          test "$(git rev-parse HEAD)" = "8d7891ade565fae44256eb0400581517261544aa"
+
+      - name: Add Pokebot bulk RAM API
+        run: |
+          set -eux
+          python pc_gen45/tools/apply_melonds_patch.py melonDS-lua
+          grep -q 'doLimitFPS = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'doAudioSync = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'JITArgs _jitargs' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q '32u,' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q 'vsync = false;' melonDS-lua/src/frontend/qt_sdl/EmuInstance.cpp
+          grep -q '.Threaded = true,' melonDS-lua/src/frontend/qt_sdl/EmuThread.cpp
+          cp pc_gen45/melonds/pokebot_bridge.lua melonDS-lua/lua/pokebot_bridge.lua
+          grep -q 'read_block' melonDS-lua/lua/core/memory.lua
+          grep -q 'native.set_function("read_block"' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
+          grep -q 'native UDP bridge listening on 127.0.0.1:4953' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
+          grep -q 'pollPokebotBridge' melonDS-lua/src/frontend/qt_sdl/EmuThread.cpp
+          grep -q 'pokebotDisplayEnabled' melonDS-lua/src/frontend/qt_sdl/EmuThread.cpp
+          grep -q 'audioMutedByPokebot' melonDS-lua/src/frontend/qt_sdl/EmuInstanceAudio.cpp
+          grep -q 'case 8: // DISPLAY' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
+          grep -q 'case 9: // AUDIO' melonDS-lua/src/frontend/qt_sdl/ScriptManager.cpp
+
+      - name: Configure melonDS using prebuilt MSYS2 dependencies
+        run: |
+          set -eux
+          cd melonDS-lua
+          cmake -S . -B build-pokebot -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_STATIC=OFF \
+            -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
+            -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a \
+            -DENABLE_JIT=ON \
+            -DENABLE_OGLRENDERER=ON \
+            -DENABLE_LTO_RELEASE=ON \
+            -DLUA_INCLUDE_DIR=/ucrt64/include/lua5.4 \
+            -DLUA_LIBRARY=/ucrt64/lib/liblua5.4.dll.a
+
+      - name: Build melonDS
+        run: |
+          set -eux
+          cd melonDS-lua
+          cmake --build build-pokebot --parallel 4
+          test -s build-pokebot/melonDS.exe
+
+      - name: Stage packaged folder layout
+        run: |
+          set -eux
+          ROOT="artifact/Pokebot-Gen45-PC-HGSS-StarterHunter"
+          mkdir -p "$ROOT/emulator/lua" "$ROOT/bot/backend" "$ROOT/bot/gen4" "$ROOT/bot/data" "$ROOT/docs" "$ROOT/tools" "$ROOT/pokebot_ipc" "$ROOT/assets/sprites/hgss/normal" "$ROOT/assets/sprites/hgss/shiny"
+
+          cp melonDS-lua/build-pokebot/melonDS.exe "$ROOT/emulator/melonDS.exe"
+
+          DEPLOYQT="$(command -v windeployqt6 || command -v windeployqt || true)"
+          if [ -n "$DEPLOYQT" ]; then
+            "$DEPLOYQT" "$ROOT/emulator/melonDS.exe" --release --no-translations || true
+          fi
+
+          # Keep all emulator runtime DLLs beside melonDS.exe, not in the bot root.
+          for pass in 1 2 3; do
+            ldd "$ROOT/emulator/melonDS.exe" \
+              | awk '/=> \/ucrt64\/bin\// {print $3}' \
+              | sort -u \
+              | while read -r dll; do
+                  [ -f "$dll" ] && cp -n "$dll" "$ROOT/emulator/" || true
+                done
+          done
+
+          cp -R melonDS-lua/lua/core "$ROOT/emulator/lua/core"
+          cp pc_gen45/melonds/pokebot_bridge.lua "$ROOT/emulator/lua/pokebot_bridge.lua"
+
+          cp pc_gen45/pokebot_gen45.py "$ROOT/bot/"
+          cp pc_gen45/ui.py "$ROOT/bot/"
+          cp pc_gen45/stats_store.py "$ROOT/bot/"
+          cp pc_gen45/backend/*.py "$ROOT/bot/backend/"
+          cp pc_gen45/gen4/*.py "$ROOT/bot/gen4/"
+          cp pc_gen45/data/species_gen4.json "$ROOT/bot/data/"
+          cp pc_gen45/data/abilities_gen4.json "$ROOT/bot/data/"
+
+          SPRITE_SRC="pokeapi-sprites/sprites/pokemon/versions/generation-iv/heartgold-soulsilver"
+          for i in $(seq 1 493); do
+            [ -f "$SPRITE_SRC/$i.png" ] && cp "$SPRITE_SRC/$i.png" "$ROOT/assets/sprites/hgss/normal/" || true
+            [ -f "$SPRITE_SRC/shiny/$i.png" ] && cp "$SPRITE_SRC/shiny/$i.png" "$ROOT/assets/sprites/hgss/shiny/" || true
+          done
+
+          cp pc_gen45/README.md "$ROOT/docs/README.md"
+          cp melonDS-lua/LICENSE "$ROOT/docs/MELONDS_GPLv3_LICENSE.txt"
+          printf '%s\n' 'HGSS sprite assets sourced from https://github.com/PokeAPI/sprites' > "$ROOT/docs/SPRITES_SOURCE.txt"
+
+      - name: Add clean Windows launcher and docs
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $Root = 'artifact\Pokebot-Gen45-PC-HGSS-StarterHunter'
+
+          @'
+          @echo off
+          setlocal
+          cd /d "%~dp0"
+
+          where pyw >nul 2>nul
+          if %errorlevel%==0 (
+            start "" pyw -3 "%~dp0bot\ui.py"
+            exit /b 0
+          )
+
+          where pythonw >nul 2>nul
+          if %errorlevel%==0 (
+            start "" pythonw "%~dp0bot\ui.py"
+            exit /b 0
+          )
+
+          python "%~dp0bot\ui.py"
+          if errorlevel 1 pause
+          '@ | Set-Content -Encoding ASCII "$Root\Pokebot-Gen45.bat"
+
+          @'
+          @echo off
+          setlocal
+          cd /d "%~dp0\.."
+
+          :menu
+          cls
+          echo ============================================================
+          echo Pokebot Gen45 PC - Legacy / Diagnostics
+          echo ============================================================
+          echo.
+          echo 1. Start melonDS
+          echo 2. Check current HGSS starters
+          echo 3. Start console HGSS shiny starter hunter
+          echo 4. Test Pokebot bridge
+          echo 5. Test BACKGROUND A input
+          echo 6. Scan ARM9 RAM
+          echo 7. Legacy starter probe
+          echo 8. Display OFF
+          echo 9. Display ON
+          echo 10. Sound OFF
+          echo 11. Sound ON
+          echo 0. Exit
+          echo.
+          set /p choice=Select an option: 
+
+          if "%choice%"=="1" (
+            start "" "%~dp0..\emulator\melonDS.exe"
+            goto menu
+          )
+          if "%choice%"=="2" (
+            python "%~dp0..\bot\pokebot_gen45.py" hgss-starter-check
+            pause
+            goto menu
+          )
+          if "%choice%"=="3" (
+            python "%~dp0..\bot\pokebot_gen45.py" hgss-starter-hunt
+            pause
+            goto menu
+          )
+          if "%choice%"=="4" (
+            python "%~dp0..\bot\pokebot_gen45.py" ping
+            pause
+            goto menu
+          )
+          if "%choice%"=="5" (
+            python "%~dp0..\bot\pokebot_gen45.py" input-test --key A --frames 6
+            pause
+            goto menu
+          )
+          if "%choice%"=="6" (
+            python "%~dp0..\bot\pokebot_gen45.py" scan
+            pause
+            goto menu
+          )
+          if "%choice%"=="7" (
+            python "%~dp0..\bot\pokebot_gen45.py" starter-probe
+            pause
+            goto menu
+          )
+          if "%choice%"=="8" (
+            python "%~dp0..\bot\pokebot_gen45.py" display off
+            pause
+            goto menu
+          )
+          if "%choice%"=="9" (
+            python "%~dp0..\bot\pokebot_gen45.py" display on
+            pause
+            goto menu
+          )
+          if "%choice%"=="10" (
+            python "%~dp0..\bot\pokebot_gen45.py" audio off
+            pause
+            goto menu
+          )
+          if "%choice%"=="11" (
+            python "%~dp0..\bot\pokebot_gen45.py" audio on
+            pause
+            goto menu
+          )
+          if "%choice%"=="0" exit /b 0
+          goto menu
+          '@ | Set-Content -Encoding ASCII "$Root\tools\Legacy-Console.bat"
+
+          @'
+          Pokebot Gen45 PC - HGSS Starter Hunter
+
+          Folder layout:
+            emulator\     melonDS.exe, runtime DLLs, Lua bridge/core
+            bot\          Python bot, backend, Gen4 parser and species data
+            docs\         README, first-test guide, licenses and hashes
+            tools\        reserved for diagnostics/support tools
+            pokebot_ipc\  bridge command/response files
+
+          First test:
+          1. Run Pokebot-Gen45.bat. It now opens the desktop UI.
+          2. In the UI, click Launch melonDS.
+          3. Boot HeartGold Europe v10 and load your save near Elm's starter machine.
+          4. Click Test Bridge. It should report Pokebot-native-v1.
+          5. Leave Starters selected, choose one or more starter targets, then Start Hunt.
+          6. Current Hunt shows normal + shiny HGSS sprites.
+          7. Recently Seen shows live PK4 details for the latest starters.
+          8. Session and lifetime statistics are written to Local AppData.
+          9. Wild and Static mode buttons are present now; their hunt engines are wired next.
+          10. tools\Legacy-Console.bat keeps the previous console diagnostics.
+
+          Hunt presentation:
+          - Option 3 automatically disables DS screen rendering while hunting.
+          - Option 3 automatically mutes melonDS game audio while hunting.
+          - Both are restored automatically on shiny/target, safety hold, Ctrl+C,
+            normal exit, or an unexpected error.
+          - Menu options 9-12 let you control display and sound manually.
+          - Use --show-display or --keep-audio on the CLI if you want either left on.
+
+          The Lua/file bridge remains packaged only as a legacy diagnostic fallback.
+
+          Target ROM:
+          HeartGold Europe v10
+          SHA1 EB47AB4BA0326AE842135F62C7EC68CF85C9785F
+
+          The bot reads emulated RAM and injects inputs. It does not write Pokemon/game data.
+          '@ | Set-Content -Encoding ASCII "$Root\docs\FIRST_TEST.txt"
+
+          (Get-FileHash "$Root\emulator\melonDS.exe" -Algorithm SHA256).Hash |
+            Set-Content "$Root\docs\MELONDS_SHA256.txt"
+
+      - name: Smoke-check packaged layout
+        run: |
+          set -eux
+          ROOT="artifact/Pokebot-Gen45-PC-HGSS-StarterHunter"
+          test -s "$ROOT/Pokebot-Gen45.bat"
+          test -s "$ROOT/emulator/melonDS.exe"
+          test -s "$ROOT/emulator/lua/pokebot_bridge.lua"
+          test -s "$ROOT/bot/pokebot_gen45.py"
+          test -s "$ROOT/bot/ui.py"
+          test -s "$ROOT/bot/stats_store.py"
+          test -s "$ROOT/bot/data/abilities_gen4.json"
+          grep -q '"66": "Blaze"' "$ROOT/bot/data/abilities_gen4.json"
+          test -s "$ROOT/assets/sprites/hgss/normal/152.png"
+          test -s "$ROOT/assets/sprites/hgss/shiny/152.png"
+          test -s "$ROOT/docs/FIRST_TEST.txt"
+          test -s "$ROOT/tools/Legacy-Console.bat"
+          test -d "$ROOT/pokebot_ipc"
+
+          # Keep the top level intentionally clean: one launcher plus folders.
+          test "$(find "$ROOT" -maxdepth 1 -type f | wc -l)" -eq 1
+
+          find "$ROOT" -maxdepth 3 -type f | sort
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pokebot-Gen45-PC-HGSS-StarterHunter
+          path: artifact/
+          if-no-files-found: error
