@@ -530,6 +530,7 @@ class PokebotUI:
         info_row("Game", "HeartGold")
         info_row("Mode", "Starters")
         info_row("Method", "3 Pokémon / reset")
+        info_row("Speed", "MAX • JIT • UNCAPPED")
 
         self._label(
             control, "TARGETS", font=("Segoe UI Semibold", 7), fg=MUTED
@@ -1355,8 +1356,14 @@ class PokebotUI:
             messagebox.showerror("melonDS not found", f"Missing:\n{self.emulator_path}")
             return
         try:
-            subprocess.Popen([str(self.emulator_path)], cwd=str(self.emulator_path.parent))
-            self.status_line.configure(text="melonDS launched.", fg=MUTED)
+            kwargs = {"cwd": str(self.emulator_path.parent)}
+            if hasattr(subprocess, "HIGH_PRIORITY_CLASS"):
+                kwargs["creationflags"] = subprocess.HIGH_PRIORITY_CLASS
+            subprocess.Popen([str(self.emulator_path)], **kwargs)
+            self.status_line.configure(
+                text="melonDS launched in MAX-speed JIT profile.",
+                fg=MUTED,
+            )
         except Exception as exc:
             messagebox.showerror("Could not start melonDS", str(exc))
 
