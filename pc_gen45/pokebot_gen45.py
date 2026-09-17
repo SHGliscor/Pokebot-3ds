@@ -275,10 +275,9 @@ def _reach_hgss_starter_screen(
 
     fast_forward_enabled = False
     try:
-        # Do not fast-forward the HGSS title/continue input phase. A 4-frame
-        # pulse at 1000 FPS is only a few milliseconds in real time and proved
-        # intermittent at "Touch to Start". Keep title input at normal speed
-        # and reproduce a physical DS-style press/release cadence instead.
+        # The dedicated Pokebot melonDS build is unthrottled. Button holds
+        # therefore use wall-clock KEY down/up edges instead of emulated-frame
+        # pulses, so input remains reliable regardless of host FPS.
         backend.set_fast_forward(False)
 
         loaded_reported = False
@@ -293,14 +292,14 @@ def _reach_hgss_starter_screen(
                 live_base = None
 
             if live_base is None:
-                # The uploaded retail-behaviour video confirms A alone
-                # advances HGSS' "Touch to Start" screen. Reproduce a deliberate
-                # physical press: ~200 ms down at 60 FPS, then ~250 ms released.
-                # Do not mix Start into this phase; doing so only adds timing
-                # variance between title and Continue.
+                # A alone advances HGSS' "Touch to Start" screen. Use a
+                # real-time hold so unlimited emulation cannot collapse the
+                # press to only a few host milliseconds.
                 boot_input_cycle += 1
-                backend.pulse("A", 12)
-                time.sleep(0.25)
+                backend.set_key("A", True)
+                time.sleep(0.050)
+                backend.set_key("A", False)
+                time.sleep(0.020)
                 continue
 
             if not loaded_reported:
@@ -310,7 +309,7 @@ def _reach_hgss_starter_screen(
             # Title input ran at normal speed, so just clear any boot input
             # before the exact HGSS pre-starter guard takes over.
             backend.reset_input()
-            time.sleep(0.05)
+            time.sleep(0.005)
 
             try:
                 ready = _hgss_starter_ui_ready(backend, live_base)
@@ -320,28 +319,30 @@ def _reach_hgss_starter_screen(
             if ready:
                 backend.reset_input()
 
-                # Pokebot-NDS waits 9 frames after the guard changes so all
-                # three starters are fully written. At 60 FPS this is 150 ms.
-                time.sleep(9.0 / 60.0)
+                # At unlimited speed nine emulated frames complete almost
+                # immediately. A short wall delay plus the stable double-read
+                # below is safer and much faster than sleeping 150 ms.
+                time.sleep(0.005)
 
                 mons = _read_hgss_starter_triplet(backend, live_base)
                 if mons is not None:
                     # One second read guards against a partially-updated trio.
-                    time.sleep(0.02)
+                    time.sleep(0.003)
                     stable = _read_hgss_starter_triplet(backend, live_base)
                     if stable is not None and _starter_set_identity(stable) == _starter_set_identity(mons):
                         return stable, live_base, "pointer", time.monotonic() - cycle_started
 
                 # Guard became ready but data was not stable yet; do not press A.
                 # Simply allow the game a few more frames to finish the writes.
-                time.sleep(0.05)
+                time.sleep(0.005)
                 continue
 
-            # Pokebot-NDS progress_text() holds A for 5-20 frames then releases
-            # for 5. A shorter deterministic pulse is enough here while still
-            # giving the game a clean release edge before we re-check the guard.
-            backend.pulse("A", 6)
-            time.sleep(max(input_interval, 0.12))
+            # Match Pokebot-NDS' 5-20 frame A hold using wall-clock input
+            # so it remains valid while the emulator is running uncapped.
+            backend.set_key("A", True)
+            time.sleep(0.020)
+            backend.set_key("A", False)
+            time.sleep(max(input_interval, 0.010))
 
         return None, base_hint, "timeout", time.monotonic() - cycle_started
     finally:
@@ -633,16 +634,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--show-display", action="store_true", help="Keep melonDS screen rendering during the hunt")
     s.add_argument("--keep-audio", action="store_true", help="Keep melonDS game audio enabled during the hunt")
     s.add_argument("--navigation-timeout", type=float, default=45.0)
-    s.add_argument("--boot-settle", type=float, default=0.35)
+    s.add_argument("--boot-settle", type=float, default=0.02)
     s.add_argument("--reset-delay-min", type=float, default=0.00)
-    s.add_argument("--reset-delay-max", type=float, default=0.20)
+    s.add_argument("--reset-delay-max", type=float, default=0.01)
     s.add_argument("--duplicate-jitter-step", type=float, default=0.40)
     s.add_argument("--duplicate-jitter-max", type=float, default=2.00)
     s.add_argument(
         "--input-interval",
         type=float,
-        default=0.035,
-        help="Minimum wall delay between boot/title input checks (default: 0.035)",
+        default=0.010,
+        help="Minimum wall delay between uncapped text-input checks (default: 0.010)",
     )
     s.set_defaults(func=cmd_hgss_starter_hunt)
 
