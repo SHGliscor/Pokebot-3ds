@@ -602,6 +602,15 @@ replace_once(
 
 replace_once(
     emu_instance_cpp,
+    """    vsync = vsync && globalCfg.GetBool("Screen.VSync");
+""",
+    """    // Pokebot turbo profile never waits on display VSync.
+    vsync = false;
+""",
+)
+
+replace_once(
+    emu_instance_cpp,
     """#ifdef JIT_ENABLED
     Config::Table jitopt = globalCfg.GetTable("JIT");
     JITArgs _jitargs {
