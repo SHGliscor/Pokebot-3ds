@@ -1,0 +1,12 @@
+Pokebot3DS-CFW v0p43EJ HF99 — ORAS Professor Oak Challenge
+
+- Added working Omega Ruby checklist selection alongside Alpha Sapphire.
+- Stored OR and AS progress separately in professor_oak_oras.json.
+- Migrated existing HF98 AS progress automatically.
+- Added checklist search/filter controls.
+- Added Incomplete only filter.
+- Reset now affects only the selected game version.
+- Kept Oak Challenge tracking manual and non-invasive to hunt automation.
+- Version-specific OR substitutions include Seedot/Nuzleaf/Shiftry, Mawile,
+  Zangoose, Solrock, Latios, Groudon, Reshiram, Palkia, Tornadus and Ho-Oh.
+- Full project compile check passes.

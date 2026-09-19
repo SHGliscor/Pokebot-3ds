@@ -1,0 +1,18 @@
+Pokebot3DS-CFW v0p43EJ HF96 — Session Rate + Field Pace
+
+Based directly on HF95/HF94 current build.
+
+Telemetry only; hunt-control timings are unchanged.
+
+Changes:
+- Encounters/Hour remains the real completed encounter throughput: session encounters / active session time.
+- Adds Field Pace/Hour, calculated from average overworld movement-to-encounter time.
+- Keeps Field Avg, Battle/Return Avg and Cycle Avg separate.
+- Wild worker emits real rate, field pace and cycle pace in stats payload.
+- Current Stats tab shows Current Rate/hr, Field Pace/hr and all three timing averages.
+- Encounter ledger records field_to_encounter_s and battle_to_field_s for later analysis.
+
+Meaning:
+- Encounters/Hour answers: how many completed encounters does the bot process per real hour?
+- Field Pace/Hour answers: how quickly are encounters triggering while actually moving in encounter terrain?
+- A permanent Encounter Power patch can greatly improve Field Pace even when battle/run/return overhead keeps completed Encounters/Hour near ~185/h.

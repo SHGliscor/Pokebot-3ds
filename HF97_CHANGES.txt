@@ -1,0 +1,101 @@
+Pokebot3DS-CFW v0p43EJ HF97 — Fast Wild Run
+
+Base
+----
+Built directly from HF96 Session Rate + Field Pace.
+
+Goal
+----
+Increase completed ordinary Wild encounters/hour by reducing bot-side latency
+after a non-shiny encounter while preserving the same RAM safety authority.
+
+Changes
+-------
+1. Faster causal Run retry cadence for normal Walk/Run and Acro Bunny hunts:
+   - Run touch hold: 120 ms -> 90 ms
+   - Run touch settle: 120 ms -> 60 ms
+   - post-touch observation window: 0.55 s -> 0.30 s
+   - battle-state polling: 55 ms -> 35 ms
+
+   Every retry still re-reads battle RAM before sending another touch. No blind
+   multi-touch burst was added.
+
+2. Faster field-return confirmation:
+   - causal field stable samples: 3 -> 2
+   - causal field poll: 100 ms -> 60 ms
+   - world field-authority poll: 100 ms -> 60 ms
+
+   The stronger predicates are unchanged: battle inactive, same/safe grid,
+   settled coordinates and proven encounter terrain.
+
+3. Added phase timing log lines:
+   HF97 PHASE #N: boundary_wait / pre_run_processing / run_to_core_field /
+   postcore_field_authority / accepted_run_attempt
+
+4. Added bounded Run recovery for delayed battle-menu presentation:
+   - after the normal 24 causal Run taps, wait 0.50 s and allow up to 24
+     additional taps for both single encounters and Hordes
+   - success still requires battle RAM to become inactive and the existing
+     stable grass-field authority to pass
+   - this prevents delayed presentation from becoming a false Safety HOLD
+
+5. Run mode is now strict:
+   - Run dispatch can only issue the B+direction fluid movement profile
+   - the old one-tile directional reposition fallback is disabled for Run
+   - narrow or unsupported corridors produce an explicit Safety HOLD instead
+     of silently walking
+
+6. Database-driven short grass corridors:
+   - long strips retain the 5-tile Run profile
+   - medium strips retain the 3-tile Run profile
+   - short B+direction Run pulses are used only when at least two consecutive
+     database-confirmed grass destination cells are available; a one-cell
+     corridor is rejected before input because the shortest proven pulse can
+     move two tiles and would cross its boundary
+   - the endpoint validator and database corridor jointly decide whether the
+     resulting tile stayed inside grass
+   - the corridor itself is now the authoritative Run reserve; a pulse may
+     consume the final grass cell in a small patch when the commanded axis,
+     traversed span, and endpoint remain valid, while a path/out-of-corridor
+     endpoint still holds
+   - the world authority now derives connected grass-patch metadata and
+     direction-specific boundary edges from the database, including the first
+     non-grass cell beyond each corridor
+   - added a read-only ORAS base + 1.4 resource manifest builder; the supplied
+     Alpha Sapphire dump contains 536 ZO zone records and 431 MM map records,
+     while the 1.4 archive provides ten non-map resource overrides
+   - added a read-only ZO/MM record inspector that validates section offsets,
+     map dimensions, tile-payload bounds, and declared record sizes before
+     terrain decoding is attempted
+   - a direction with no grass destination remains an explicit HOLD
+
+7. Edge-grass opening direction:
+   - the requested first direction is now a preference, not an exclusive lock
+   - if that edge has no grass destination, the opposite direction in the
+     selected axis is tried before raising a HOLD
+   - the selected fallback is recorded in movement telemetry
+
+8. Collision-aware wall boundaries:
+   - the runtime database now carries verified Route 102 boundary cells in
+     `collision_cells(zone_id, grid_x, grid_y, blocked, source)`
+   - wall metadata is exposed for diagnostics and future calibrated profiles
+   - one-cell Run remains fail-closed because the shortest hardware pulse has
+     already been observed crossing a one-cell grass boundary; collision
+     labels alone do not prove that the pulse will stop before the wall
+
+Unchanged
+---------
+- shiny/target authority and HOLD behavior
+- PK6 boundary/read rules
+- encounter movement logic
+- O-Power patch / game files
+- auto capture
+- Horde/Cave/Surf/Fishing special safety paths
+- session rate and field pace definitions from HF96
+
+Test
+----
+Run the same normal grass hunt for 50+ encounters. Compare completed
+Encounters/Hour and Battle/Return Avg against HF96. If any false Run/field
+Safety HOLD appears, upload the support ZIP; the HF97 PHASE lines identify the
+exact stage.
