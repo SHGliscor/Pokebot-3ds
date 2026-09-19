@@ -1,0 +1,21 @@
+Pokebot3DS-CFW v0p43EJ HF95 — Encounter Timing Telemetry
+
+Base: HF94 DexNavFluidFastDialogue_RNGHidden_Unified3DS
+
+HF95 does NOT change hunt control, movement timing, Run timing, shiny authority,
+or capture logic. It adds observation-only timing telemetry for Wild hunts.
+
+Dashboard Current Hunt now separates:
+- Field Avg: time from movement loop start to proven encounter boundary.
+- Battle/Return Avg: time from encounter boundary through battle/Run/loading until
+  proven field authority is restored.
+- Cycle Avg: measured Field + Battle/Return cycle.
+
+The old ambiguous Average Time label was removed from the Dashboard. Backend
+average_time remains for compatibility with Discord/history code.
+
+Each completed normal Wild cycle also logs:
+TIMING #N: field->encounter X.XXXs • battle+return Y.YYYs • cycle Z.ZZZs
+
+Purpose: correctly measure native Encounter Power Lv3 / encounter-rate changes
+without battle-transition overhead hiding the improvement.

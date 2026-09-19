@@ -1,0 +1,50 @@
+Pokebot3DS-CFW v0p43EJ HF97 — Fast Wild Run
+
+Base
+----
+Built directly from HF96 Session Rate + Field Pace.
+
+Goal
+----
+Increase completed ordinary Wild encounters/hour by reducing bot-side latency
+after a non-shiny encounter while preserving the same RAM safety authority.
+
+Changes
+-------
+1. Faster causal Run retry cadence for normal Walk/Run and Acro Bunny hunts:
+   - Run touch hold: 120 ms -> 90 ms
+   - Run touch settle: 120 ms -> 60 ms
+   - post-touch observation window: 0.55 s -> 0.30 s
+   - battle-state polling: 55 ms -> 35 ms
+
+   Every retry still re-reads battle RAM before sending another touch. No blind
+   multi-touch burst was added.
+
+2. Faster field-return confirmation:
+   - causal field stable samples: 3 -> 2
+   - causal field poll: 100 ms -> 60 ms
+   - world field-authority poll: 100 ms -> 60 ms
+
+   The stronger predicates are unchanged: battle inactive, same/safe grid,
+   settled coordinates and proven encounter terrain.
+
+3. Added phase timing log lines:
+   HF97 PHASE #N: boundary_wait / pre_run_processing / run_to_core_field /
+   postcore_field_authority / accepted_run_attempt
+
+Unchanged
+---------
+- shiny/target authority and HOLD behavior
+- PK6 boundary/read rules
+- encounter movement logic
+- O-Power patch / game files
+- auto capture
+- Horde/Cave/Surf/Fishing special safety paths
+- session rate and field pace definitions from HF96
+
+Test
+----
+Run the same normal grass hunt for 50+ encounters. Compare completed
+Encounters/Hour and Battle/Return Avg against HF96. If any false Run/field
+Safety HOLD appears, upload the support ZIP; the HF97 PHASE lines identify the
+exact stage.

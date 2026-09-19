@@ -1,0 +1,8 @@
+HF87 DexNav Sustained CPAD
+
+- Replaces HF86's repeated 300 ms CPAD taps with one continuous 3000 ms shallow up-left hold.
+- Uses X=-0.40, Y=+0.08, matching the successful manual probe direction.
+- If battle has not started after the primary hold, allows one 1400 ms top-up hold.
+- Retains Route 101 RAM authority checks and fails closed for clearly inverted movement.
+- Retains HF85 persistent RNG telemetry.
+- No new boot.firm protocol is required beyond the CPAD-capable HF77+ firmware.

@@ -1,0 +1,9 @@
+HF100 — Professor Oak individual Pokémon tracker
+
+- POKÉMON tab with 410 species-level entries per OR/AS single-game route.
+- Separate AS/OR lists and persistent progress.
+- Starter and fossil choice selectors.
+- Eevee's eight evolutions expanded explicitly.
+- Search, incomplete-only filter, reset and copy-missing controls.
+- Existing grouped checklist progress is migrated where species names are explicit.
+- GUIDE / GATES retained for reference.

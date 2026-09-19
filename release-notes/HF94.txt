@@ -1,0 +1,10 @@
+Pokebot3DS-CFW HF94
+
+- Built directly from HF93.
+- Removes the raw main-MT RNG tracker from the dashboard.
+- Stops the persistent RNG telemetry worker during normal hunting, freeing UDP/RAM bandwidth.
+- DexNav tutorial rival dialogue now uses adaptive fast A presses (650 ms normal / 850 ms cleanup) and stops as soon as RAM proves the target spawned.
+- DexNav steering no longer deliberately tapers CPAD magnitude near contact.
+- Longer RAM-guided CPAD corrections and no extra post-pulse wait reduce visible stop/start gaps.
+- Keeps HF93 Fang display, accidental-normal-encounter reset, accidental-shiny protection, and RAM target steering.
+- No boot.firm protocol change.

@@ -1,0 +1,7 @@
+HF86 DexNav Diagonal CPAD
+
+- Correct automatic Route 101 tutorial Poochyena sneak to LEFT + slightly UP.
+- Uses normalized CPAD X=-0.40, Y=+0.08.
+- Direction comes directly from mapper hardware evidence: 1791,2349 -> ~1711,2334.
+- Retains 17-A dialogue cadence, acknowledged CPAD command 13, RAM field gates, Lv.5 + elemental-Fang PK6 validation, and HF85 persistent RNG telemetry.
+- No new boot.firm protocol required beyond the CPAD-capable HF77+ firmware.

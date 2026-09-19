@@ -1,0 +1,7 @@
+HF85 Persistent RNG Telemetry
+
+- Replaces disposable 750 ms RNG QThreads with one persistent telemetry worker.
+- Keeps the locked shiny-frame countdown alive through battle, run-away and field re-entry.
+- Transient UDP 4952 contention is retried instead of terminating/freezeing the tracker.
+- Increases local MT catch-up budget to 32768 advances for battle/transition bursts.
+- Read-only/passive: no RNG manipulation or hunt timing changes.
