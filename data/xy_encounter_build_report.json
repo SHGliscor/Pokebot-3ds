@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "game": "pokemon_y",
+  "source_archive": "a/0/1/2",
+  "source_sha256": "3fd7935d8530dfd4d669663f7c0c6404c6832e41ae204af6552bf095ea5d2e17",
+  "zones_total": 360,
+  "zones_with_encounters": 53,
+  "locations_with_encounters": 37,
+  "raw_slot_records": 1590,
+  "parser": "pk3DS XYWE fixed 0x178 / 94-slot layout",
+  "oras_changed": false,
+  "pokemon_x_status": "not synthesized; requires X a/0/1/2 source"
+}

@@ -1,0 +1,26 @@
+Pokebot-Luma v0p7-n3ds-fb1-cpad — HF86 diagonal hardware test
+===========================================================
+
+1. Back up the current SD-root boot.firm.
+2. Install this package's 3ds_sd\boot.firm at SD root.
+3. Boot ORAS normally.
+4. Rosalina -> Pokebot3DS Bridge -> Enable Both.
+5. Keep standard Rosalina InputRedirection OFF.
+6. Start Pokebot3DS-CFW HF77 and run Connection Test.
+7. Select Static -> Poochyena - Route 101 (DexNav Tutorial).
+8. Start from the same pre-tutorial Route 101 save used by the probe.
+
+Expected:
+- LEFT triggers the rival.
+- 17 dialogue A presses run using the resilient 14-fast + 3-cleanup cadence.
+- The bot reaches the hardware-proven Poochyena-visible world position.
+- HF86 sends partial LEFT + slight-UP Circle Pad pulses automatically.
+- The player follows the mapper-proven shallow up-left path toward the hidden Poochyena without scaring it away.
+- Battle is RAM-detected.
+- Opponent PK6 validates as Poochyena #261, Lv. 5, with an elemental Fang.
+- Non-shiny -> reset/repeat; shiny/target -> normal HOLD/capture policy.
+
+FAIL-CLOSED:
+- If movement goes the wrong way, field authority is lost, Poochyena is scared
+  away, or command 13 is not available, stop and export a support ZIP.
+- Do not compensate with D-pad input during this test.

@@ -1,0 +1,24 @@
+{
+  "schema": "pokebot3ds.xy_world_build_report.v1",
+  "output": "/mnt/data/hf53_work/pokebot/wild/world/pokemon_xy_world_runtime.sqlite",
+  "zones": 360,
+  "unique_parent_maps": 81,
+  "map_matrices": 227,
+  "matrix_cells": 4586,
+  "matrix_transitions": 270,
+  "field_regions": 1030,
+  "missing_parent_ids": [],
+  "bad_matrix_refs": [],
+  "missing_region_refs": [],
+  "aquacorde_zone_ids": [
+    8,
+    9,
+    10,
+    11
+  ],
+  "source_sha256": {
+    "a/0/1/2": "3fd7935d8530dfd4d669663f7c0c6404c6832e41ae204af6552bf095ea5d2e17",
+    "a/0/4/1": "ab5acd0599c1d31ef03f1fcdf2149127812272cc2c8f53497948ffa1fe513e8b",
+    "a/0/4/2": "37786d6473edc53d11eac8e60dfaf677895a402501242e4e920cc533cdf2eab3"
+  }
+}

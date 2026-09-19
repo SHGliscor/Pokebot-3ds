@@ -1,0 +1,26 @@
+BUILD_PASS
+==========
+Status: PASS_RAW_WORLD_AND_RUNTIME_COMPILE
+Game source: Pokémon Y
+Family: X/Y (Kalos)
+
+Full raw world database:
+  zones: 360
+  map matrices: 227
+  matrix region cells: 4,586
+  field regions: 1,030
+  raw terrain tiles: 1,648,000
+  unique raw permissions: 173
+  parse failures: 0
+
+Compact runtime database:
+  classified normal-encounter cells: 6,924
+  semantic 0x20 cells: 4,604
+  semantic 0x27 cells: 2,320
+
+Both SQLite databases: PRAGMA integrity_check = ok
+All 1,030 field regions are referenced by MapMatrix data.
+Source hashes match the supplied Pokémon Y extraction exactly.
+Classification correlation: PASS.
+
+Pokémon X parity is not claimed until X source archives are compared.

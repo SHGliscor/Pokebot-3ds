@@ -1,0 +1,46 @@
+{
+  "sqlite_integrity_check_world": "ok",
+  "sqlite_integrity_check_runtime": "ok",
+  "database_counts": {
+    "zones": 360,
+    "map_matrices": 227,
+    "matrix_regions": 4586,
+    "matrix_zone_switches": 63696,
+    "field_regions": 1030,
+    "tiles": 1648000
+  },
+  "runtime_counts": {
+    "encounter_cells": 6924,
+    "semantic_0x20": 4604,
+    "semantic_0x27": 2320
+  },
+  "all_source_hashes_match": true,
+  "field_regions_referenced_by_matrices": 1030,
+  "field_regions_total": 1030,
+  "valid_zone_switch_records": 6800,
+  "valid_zone_switch_distinct_zones": 39,
+  "land_encounter_zones_from_a_0_1_2": 44,
+  "land_encounter_zones_with_zone_switch_mapping": 17,
+  "semantic_correlation_in_mapped_zone_quadrants": {
+    "0x20_land_observations": 2320,
+    "0x20_non_land_observations": 0,
+    "0x27_land_observations": 2320,
+    "0x27_non_land_observations": 0
+  },
+  "classification_pass": true,
+  "classification_basis": "Codes 0x20/0x27 are the same Gen 6 permission semantic byte used by the restored ORAS runtime authority. In every X/Y zone-switch quadrant that can be cross-linked to a valid zone, both codes occur in land-encounter zones and zero times in mapped non-land-encounter zones.",
+  "route2_sanity": [
+    259,
+    12,
+    "Route 2",
+    0
+  ],
+  "santalune_forest_sanity": [
+    286,
+    14,
+    "Santalune Forest",
+    8
+  ],
+  "compatibility_pass": true,
+  "source_game_limit": "Compiled from user-extracted Pok\u00e9mon Y sources. Pok\u00e9mon X source hashes/identity are not claimed or synthesized."
+}

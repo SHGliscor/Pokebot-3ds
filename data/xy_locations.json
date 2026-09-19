@@ -1,0 +1,432 @@
+{
+  "schema": "pokebot3ds.xy_locations.v1",
+  "source": "Gen 6 X/Y location-text index (game/PKHeX-compatible)",
+  "starter_location_id": 10,
+  "starter_location_name": "Aquacorde Town",
+  "locations": [
+    {
+      "id": 2,
+      "name": "Mystery Zone"
+    },
+    {
+      "id": 4,
+      "name": "Faraway Place"
+    },
+    {
+      "id": 6,
+      "name": "Vaniville Town"
+    },
+    {
+      "id": 8,
+      "name": "Route 1"
+    },
+    {
+      "id": 9,
+      "name": "Vaniville Pathway"
+    },
+    {
+      "id": 10,
+      "name": "Aquacorde Town"
+    },
+    {
+      "id": 12,
+      "name": "Route 2"
+    },
+    {
+      "id": 13,
+      "name": "Avance Trail"
+    },
+    {
+      "id": 14,
+      "name": "Santalune Forest"
+    },
+    {
+      "id": 16,
+      "name": "Route 3"
+    },
+    {
+      "id": 17,
+      "name": "Ouvert Way"
+    },
+    {
+      "id": 18,
+      "name": "Santalune City"
+    },
+    {
+      "id": 20,
+      "name": "Route 4"
+    },
+    {
+      "id": 21,
+      "name": "Parterre Way"
+    },
+    {
+      "id": 22,
+      "name": "Lumiose City"
+    },
+    {
+      "id": 24,
+      "name": "Prism Tower"
+    },
+    {
+      "id": 26,
+      "name": "Lysandre Labs"
+    },
+    {
+      "id": 28,
+      "name": "Route 5"
+    },
+    {
+      "id": 29,
+      "name": "Versant Road"
+    },
+    {
+      "id": 30,
+      "name": "Camphrier Town"
+    },
+    {
+      "id": 32,
+      "name": "Shabboneau Castle"
+    },
+    {
+      "id": 34,
+      "name": "Route 6"
+    },
+    {
+      "id": 35,
+      "name": "Palais Lane"
+    },
+    {
+      "id": 36,
+      "name": "Parfum Palace"
+    },
+    {
+      "id": 38,
+      "name": "Route 7"
+    },
+    {
+      "id": 39,
+      "name": "Rivière Walk"
+    },
+    {
+      "id": 40,
+      "name": "Cyllage City"
+    },
+    {
+      "id": 42,
+      "name": "Route 8"
+    },
+    {
+      "id": 43,
+      "name": "Muraille Coast"
+    },
+    {
+      "id": 44,
+      "name": "Ambrette Town"
+    },
+    {
+      "id": 46,
+      "name": "Route 9"
+    },
+    {
+      "id": 47,
+      "name": "Spikes Passage"
+    },
+    {
+      "id": 48,
+      "name": "Battle Chateau"
+    },
+    {
+      "id": 50,
+      "name": "Route 10"
+    },
+    {
+      "id": 51,
+      "name": "Menhir Trail"
+    },
+    {
+      "id": 52,
+      "name": "Geosenge Town"
+    },
+    {
+      "id": 54,
+      "name": "Route 11"
+    },
+    {
+      "id": 55,
+      "name": "Miroir Way"
+    },
+    {
+      "id": 56,
+      "name": "Reflection Cave"
+    },
+    {
+      "id": 58,
+      "name": "Shalour City"
+    },
+    {
+      "id": 60,
+      "name": "Tower of Mastery"
+    },
+    {
+      "id": 62,
+      "name": "Route 12"
+    },
+    {
+      "id": 63,
+      "name": "Fourrage Road"
+    },
+    {
+      "id": 64,
+      "name": "Coumarine City"
+    },
+    {
+      "id": 66,
+      "name": "Route 13"
+    },
+    {
+      "id": 67,
+      "name": "Lumiose Badlands"
+    },
+    {
+      "id": 68,
+      "name": "Route 14"
+    },
+    {
+      "id": 69,
+      "name": "Laverre Nature Trail"
+    },
+    {
+      "id": 70,
+      "name": "Laverre City"
+    },
+    {
+      "id": 72,
+      "name": "Poké Ball Factory"
+    },
+    {
+      "id": 74,
+      "name": "Route 15"
+    },
+    {
+      "id": 75,
+      "name": "Brun Way"
+    },
+    {
+      "id": 76,
+      "name": "Dendemille Town"
+    },
+    {
+      "id": 78,
+      "name": "Route 16"
+    },
+    {
+      "id": 79,
+      "name": "Mélancolie Path"
+    },
+    {
+      "id": 82,
+      "name": "Frost Cavern"
+    },
+    {
+      "id": 84,
+      "name": "Route 17"
+    },
+    {
+      "id": 85,
+      "name": "Mamoswine Road"
+    },
+    {
+      "id": 86,
+      "name": "Anistar City"
+    },
+    {
+      "id": 88,
+      "name": "Route 18"
+    },
+    {
+      "id": 89,
+      "name": "Vallée Étroite Way"
+    },
+    {
+      "id": 90,
+      "name": "Couriway Town"
+    },
+    {
+      "id": 92,
+      "name": "Route 19"
+    },
+    {
+      "id": 93,
+      "name": "Grande Vallée Way"
+    },
+    {
+      "id": 94,
+      "name": "Snowbelle City"
+    },
+    {
+      "id": 96,
+      "name": "Route 20"
+    },
+    {
+      "id": 97,
+      "name": "Winding Woods"
+    },
+    {
+      "id": 98,
+      "name": "Pokémon Village"
+    },
+    {
+      "id": 100,
+      "name": "Route 21"
+    },
+    {
+      "id": 101,
+      "name": "Dernière Way"
+    },
+    {
+      "id": 102,
+      "name": "Route 22"
+    },
+    {
+      "id": 103,
+      "name": "Détourner Way"
+    },
+    {
+      "id": 104,
+      "name": "Victory Road"
+    },
+    {
+      "id": 106,
+      "name": "Pokémon League"
+    },
+    {
+      "id": 108,
+      "name": "Kiloude City"
+    },
+    {
+      "id": 110,
+      "name": "Battle Maison"
+    },
+    {
+      "id": 112,
+      "name": "Azure Bay"
+    },
+    {
+      "id": 114,
+      "name": "Dendemille Gate"
+    },
+    {
+      "id": 116,
+      "name": "Couriway Gate"
+    },
+    {
+      "id": 118,
+      "name": "Ambrette Gate"
+    },
+    {
+      "id": 120,
+      "name": "Lumiose Gate"
+    },
+    {
+      "id": 122,
+      "name": "Shalour Gate"
+    },
+    {
+      "id": 124,
+      "name": "Coumarine Gate"
+    },
+    {
+      "id": 126,
+      "name": "Laverre Gate"
+    },
+    {
+      "id": 128,
+      "name": "Anistar Gate"
+    },
+    {
+      "id": 130,
+      "name": "Snowbelle Gate"
+    },
+    {
+      "id": 132,
+      "name": "Glittering Cave"
+    },
+    {
+      "id": 134,
+      "name": "Connecting Cave"
+    },
+    {
+      "id": 135,
+      "name": "Zubat Roost"
+    },
+    {
+      "id": 136,
+      "name": "Kalos Power Plant"
+    },
+    {
+      "id": 138,
+      "name": "Team Flare Secret HQ"
+    },
+    {
+      "id": 140,
+      "name": "Terminus Cave"
+    },
+    {
+      "id": 142,
+      "name": "Lost Hotel"
+    },
+    {
+      "id": 144,
+      "name": "Chamber of Emptiness"
+    },
+    {
+      "id": 146,
+      "name": "Sea Spirit’s Den"
+    },
+    {
+      "id": 148,
+      "name": "Friend Safari"
+    },
+    {
+      "id": 150,
+      "name": "Blazing Chamber"
+    },
+    {
+      "id": 152,
+      "name": "Flood Chamber"
+    },
+    {
+      "id": 154,
+      "name": "Ironworks Chamber"
+    },
+    {
+      "id": 156,
+      "name": "Dragonmark Chamber"
+    },
+    {
+      "id": 158,
+      "name": "Radiant Chamber"
+    },
+    {
+      "id": 160,
+      "name": "Pokémon League Gate"
+    },
+    {
+      "id": 162,
+      "name": "Lumiose Station"
+    },
+    {
+      "id": 164,
+      "name": "Kiloude Station"
+    },
+    {
+      "id": 166,
+      "name": "Ambrette Aquarium"
+    },
+    {
+      "id": 168,
+      "name": "Unknown Dungeon"
+    }
+  ]
+}

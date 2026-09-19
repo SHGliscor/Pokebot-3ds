@@ -1,0 +1,24 @@
+Pokebot-Luma unified boot.firm — first hardware regression test
+===============================================================
+
+Included boot.firm SHA256:
+04105c9a567890dc0baeb2cb6207535eab47fe2097d1caefabaa42b9027f4d28
+
+This is the recovered v0p6-n3ds-fb1 artifact used as the ONE firmware path in
+this build. It keeps RAM/input/framebuffer on UDP 4952 and includes the New 3DS
+latency scheduler changes.
+
+Test on either console model:
+1. Back up the current SD-root boot.firm.
+2. Copy 3ds_sd\boot.firm to SD root.
+3. Boot the 3DS.
+4. Rosalina -> Pokebot3DS Bridge -> Enable Both.
+5. Keep standard Rosalina InputRedirection OFF.
+6. Run the normal PC bot; do not launch a separate N3DS program.
+7. Run Connection Test and verify RAM + acknowledged input.
+8. Optional: TEST_FRAMEBUFFER.bat <3DS-IP>.
+
+Original 3DS note:
+The protocol is unchanged, but this exact combined firmware still needs a fresh
+Original 3DS regression soak after the New 3DS scheduling changes. Export a
+support ZIP if any latency or hold regression appears.

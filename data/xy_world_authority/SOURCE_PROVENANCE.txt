@@ -1,0 +1,33 @@
+Pokebot3DS-CFW Pokémon Y Kalos World Database — Source Provenance
+================================================================
+
+This package was compiled on 2026-09-04 from the user's own extracted
+Pokémon Y RomFS data. No game archive is redistributed in this package.
+
+Authoritative source set used:
+  a/0/1/2  ZoneData + encounter container
+    SHA256 3fd7935d8530dfd4d669663f7c0c6404c6832e41ae204af6552bf095ea5d2e17
+    selected by the user's source manifest from the Pokémon Y update
+
+  a/0/4/1  MapGR / field-region geometry and raw tile permissions
+    SHA256 ab5acd0599c1d31ef03f1fcdf2149127812272cc2c8f53497948ffa1fe513e8b
+    selected from the Pokémon Y base RomFS
+
+  a/0/4/2  MapMatrix
+    SHA256 37786d6473edc53d11eac8e60dfaf677895a402501242e4e920cc533cdf2eab3
+    selected from the Pokémon Y base RomFS
+
+The build preserves every 40x40 MapGR region's first 1,600 four-byte raw
+permission cells. The compact runtime database includes only permissions whose
+Gen 6 semantic byte is 0x20 or 0x27. Those are the same normal-encounter
+semantic codes present in the restored Alpha Sapphire runtime authority.
+
+Independent X/Y cross-correlation performed for this build found that, among
+valid zone-switch quadrants that can be linked to game-file encounter tables,
+0x20 and 0x27 occur in land-encounter zones and zero times in mapped non-land
+encounter zones. See verification.json for counts.
+
+IMPORTANT: this package is authoritative for the supplied Pokémon Y source set.
+Pokémon X source hashes have NOT been supplied or compared, so this package does
+not claim byte-identical Pokémon X world data. Do not synthesize Pokémon X
+version-specific data from Pokémon Y.

@@ -1,0 +1,75 @@
+{
+  "tool": "Pokebot3DS-CFW Pok\u00e9mon Y Whole-Game World DB Rebuilder v1",
+  "game": "Pokemon Y",
+  "family": "xy",
+  "read_only": true,
+  "whole_game": true,
+  "status": "PASS",
+  "archive_selection": {
+    "zone_data": {
+      "relative_path": "a/0/1/2",
+      "path": "/mnt/data/xy_src/a/0/1/2",
+      "sha256": "3fd7935d8530dfd4d669663f7c0c6404c6832e41ae204af6552bf095ea5d2e17",
+      "expected_sha256": "3fd7935d8530dfd4d669663f7c0c6404c6832e41ae204af6552bf095ea5d2e17",
+      "hash_match": true,
+      "garc_entries": 361
+    },
+    "field_data": {
+      "relative_path": "a/0/4/1",
+      "path": "/mnt/data/xy_src/a/0/4/1",
+      "sha256": "ab5acd0599c1d31ef03f1fcdf2149127812272cc2c8f53497948ffa1fe513e8b",
+      "expected_sha256": "ab5acd0599c1d31ef03f1fcdf2149127812272cc2c8f53497948ffa1fe513e8b",
+      "hash_match": true,
+      "garc_entries": 1030
+    },
+    "map_matrix": {
+      "relative_path": "a/0/4/2",
+      "path": "/mnt/data/xy_src/a/0/4/2",
+      "sha256": "37786d6473edc53d11eac8e60dfaf677895a402501242e4e920cc533cdf2eab3",
+      "expected_sha256": "37786d6473edc53d11eac8e60dfaf677895a402501242e4e920cc533cdf2eab3",
+      "hash_match": true,
+      "garc_entries": 227
+    }
+  },
+  "counts": {
+    "zone_garc_entries": 361,
+    "zones_parsed": 360,
+    "map_matrix_garc_entries": 227,
+    "matrices_parsed": 227,
+    "field_data_garc_entries": 1030,
+    "field_regions_parsed": 1030,
+    "tiles_compiled": 1648000,
+    "unique_raw_permission_values": 173,
+    "matrix_region_cells": 4586,
+    "matrix_zone_switches": 63696,
+    "encounter_cells": 6924,
+    "semantic_0x20_cells": 4604,
+    "semantic_0x27_cells": 2320,
+    "parse_failures": 0
+  },
+  "expected_core_counts": {
+    "zones_parsed": 360,
+    "map_matrix_garc_entries": 227,
+    "matrices_parsed": 227,
+    "field_data_garc_entries": 1030,
+    "field_regions_parsed": 1030,
+    "tiles_compiled": 1648000,
+    "parse_failures": 0
+  },
+  "classification": {
+    "normal_encounter_semantic_codes": [
+      32,
+      39
+    ],
+    "basis": "Same Gen 6 field-permission semantic byte used by ORAS runtime authority. XY cross-correlation verification is written separately in verification.json.",
+    "important": "No other permission values are classified as encounter terrain."
+  },
+  "outputs": {
+    "database": "pokemon_y_world.sqlite",
+    "runtime_database": "pokemon_y_grass_runtime.sqlite",
+    "permission_catalog": "permission_catalog.json",
+    "zone_index": "zone_index.json",
+    "parse_failures": "parse_failures.json"
+  },
+  "elapsed_seconds": 26.452
+}

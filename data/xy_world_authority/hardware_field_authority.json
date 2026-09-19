@@ -1,0 +1,32 @@
+{
+  "game": "pokemon_y",
+  "status": "XY_FIELD_AUTHORITY_HARDWARE_PROOF_PASS",
+  "proof_location": "Santalune Forest",
+  "proof_zone_id": 286,
+  "addresses": {
+    "x": "0x08C670BC",
+    "z": "0x08C670C4",
+    "zone": "0x08C67190"
+  },
+  "tile_scale_world_units": 18.0,
+  "proof_observations": {
+    "x_horizontal_delta": 54.0,
+    "x_tiles": 3,
+    "z_vertical_delta": -54.0,
+    "z_tiles": -3,
+    "cross_axis_drift": 0.0,
+    "return_error": 0.0,
+    "baseline_grid": [
+      54,
+      44
+    ],
+    "matrix_id": 8,
+    "region_id": 161,
+    "local_tile": [
+      14,
+      4
+    ],
+    "terrain": "Tall grass",
+    "all_HF60_checks": true
+  }
+}

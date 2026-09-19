@@ -1,0 +1,936 @@
+{
+  "schema": "pokebot3ds.xy_world_locations.v1",
+  "source": "Pokemon X/Y decrypted RomFS a/0/1/2 + a/0/4/1 + a/0/4/2",
+  "zone_count": 360,
+  "map_matrix_count": 227,
+  "field_region_count": 1030,
+  "locations": [
+    {
+      "parent_map": 6,
+      "name": "Vaniville Town",
+      "zone_count": 8,
+      "zone_ids": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "parent_map": 8,
+      "name": "Route 1",
+      "zone_count": 1,
+      "zone_ids": [
+        258
+      ]
+    },
+    {
+      "parent_map": 10,
+      "name": "Aquacorde Town",
+      "zone_count": 4,
+      "zone_ids": [
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "parent_map": 12,
+      "name": "Route 2",
+      "zone_count": 1,
+      "zone_ids": [
+        259
+      ]
+    },
+    {
+      "parent_map": 14,
+      "name": "Santalune Forest",
+      "zone_count": 1,
+      "zone_ids": [
+        286
+      ]
+    },
+    {
+      "parent_map": 16,
+      "name": "Route 3",
+      "zone_count": 1,
+      "zone_ids": [
+        260
+      ]
+    },
+    {
+      "parent_map": 18,
+      "name": "Santalune City",
+      "zone_count": 10,
+      "zone_ids": [
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62
+      ]
+    },
+    {
+      "parent_map": 20,
+      "name": "Route 4",
+      "zone_count": 1,
+      "zone_ids": [
+        261
+      ]
+    },
+    {
+      "parent_map": 22,
+      "name": "Lumiose City",
+      "zone_count": 73,
+      "zone_ids": [
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        75,
+        76,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        104,
+        105,
+        106,
+        107,
+        108,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        359
+      ]
+    },
+    {
+      "parent_map": 24,
+      "name": "Prism Tower",
+      "zone_count": 6,
+      "zone_ids": [
+        77,
+        78,
+        79,
+        80,
+        81,
+        82
+      ]
+    },
+    {
+      "parent_map": 26,
+      "name": "Lysandre Labs",
+      "zone_count": 10,
+      "zone_ids": [
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103
+      ]
+    },
+    {
+      "parent_map": 28,
+      "name": "Route 5",
+      "zone_count": 1,
+      "zone_ids": [
+        262
+      ]
+    },
+    {
+      "parent_map": 30,
+      "name": "Camphrier Town",
+      "zone_count": 6,
+      "zone_ids": [
+        12,
+        13,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "parent_map": 32,
+      "name": "Shabboneau Castle",
+      "zone_count": 3,
+      "zone_ids": [
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "parent_map": 34,
+      "name": "Route 6",
+      "zone_count": 1,
+      "zone_ids": [
+        263
+      ]
+    },
+    {
+      "parent_map": 36,
+      "name": "Parfum Palace",
+      "zone_count": 16,
+      "zone_ids": [
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299,
+        300,
+        301,
+        302
+      ]
+    },
+    {
+      "parent_map": 38,
+      "name": "Route 7",
+      "zone_count": 4,
+      "zone_ids": [
+        264,
+        265,
+        352,
+        353
+      ]
+    },
+    {
+      "parent_map": 40,
+      "name": "Cyllage City",
+      "zone_count": 15,
+      "zone_ids": [
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171
+      ]
+    },
+    {
+      "parent_map": 42,
+      "name": "Route 8",
+      "zone_count": 1,
+      "zone_ids": [
+        266
+      ]
+    },
+    {
+      "parent_map": 44,
+      "name": "Ambrette Town",
+      "zone_count": 6,
+      "zone_ids": [
+        45,
+        47,
+        49,
+        50,
+        51,
+        52
+      ]
+    },
+    {
+      "parent_map": 46,
+      "name": "Route 9",
+      "zone_count": 1,
+      "zone_ids": [
+        267
+      ]
+    },
+    {
+      "parent_map": 48,
+      "name": "Battle Chateau",
+      "zone_count": 5,
+      "zone_ids": [
+        329,
+        330,
+        331,
+        332,
+        333
+      ]
+    },
+    {
+      "parent_map": 50,
+      "name": "Route 10",
+      "zone_count": 1,
+      "zone_ids": [
+        268
+      ]
+    },
+    {
+      "parent_map": 52,
+      "name": "Geosenge Town",
+      "zone_count": 8,
+      "zone_ids": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "parent_map": 54,
+      "name": "Route 11",
+      "zone_count": 1,
+      "zone_ids": [
+        269
+      ]
+    },
+    {
+      "parent_map": 56,
+      "name": "Reflection Cave",
+      "zone_count": 4,
+      "zone_ids": [
+        305,
+        306,
+        307,
+        308
+      ]
+    },
+    {
+      "parent_map": 58,
+      "name": "Shalour City",
+      "zone_count": 8,
+      "zone_ids": [
+        172,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180
+      ]
+    },
+    {
+      "parent_map": 60,
+      "name": "Tower of Mastery",
+      "zone_count": 6,
+      "zone_ids": [
+        181,
+        182,
+        183,
+        184,
+        185,
+        186
+      ]
+    },
+    {
+      "parent_map": 62,
+      "name": "Route 12",
+      "zone_count": 2,
+      "zone_ids": [
+        270,
+        271
+      ]
+    },
+    {
+      "parent_map": 64,
+      "name": "Coumarine City",
+      "zone_count": 12,
+      "zone_ids": [
+        187,
+        188,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199
+      ]
+    },
+    {
+      "parent_map": 66,
+      "name": "Route 13",
+      "zone_count": 1,
+      "zone_ids": [
+        272
+      ]
+    },
+    {
+      "parent_map": 68,
+      "name": "Route 14",
+      "zone_count": 2,
+      "zone_ids": [
+        273,
+        274
+      ]
+    },
+    {
+      "parent_map": 70,
+      "name": "Laverre City",
+      "zone_count": 10,
+      "zone_ids": [
+        200,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210
+      ]
+    },
+    {
+      "parent_map": 72,
+      "name": "Poké Ball Factory",
+      "zone_count": 4,
+      "zone_ids": [
+        309,
+        310,
+        311,
+        312
+      ]
+    },
+    {
+      "parent_map": 74,
+      "name": "Route 15",
+      "zone_count": 1,
+      "zone_ids": [
+        275
+      ]
+    },
+    {
+      "parent_map": 76,
+      "name": "Dendemille Town",
+      "zone_count": 7,
+      "zone_ids": [
+        29,
+        30,
+        33,
+        34,
+        35,
+        36,
+        37
+      ]
+    },
+    {
+      "parent_map": 78,
+      "name": "Route 16",
+      "zone_count": 2,
+      "zone_ids": [
+        276,
+        277
+      ]
+    },
+    {
+      "parent_map": 82,
+      "name": "Frost Cavern",
+      "zone_count": 5,
+      "zone_ids": [
+        313,
+        314,
+        315,
+        316,
+        317
+      ]
+    },
+    {
+      "parent_map": 84,
+      "name": "Route 17",
+      "zone_count": 1,
+      "zone_ids": [
+        278
+      ]
+    },
+    {
+      "parent_map": 86,
+      "name": "Anistar City",
+      "zone_count": 10,
+      "zone_ids": [
+        211,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        356
+      ]
+    },
+    {
+      "parent_map": 88,
+      "name": "Route 18",
+      "zone_count": 2,
+      "zone_ids": [
+        279,
+        280
+      ]
+    },
+    {
+      "parent_map": 90,
+      "name": "Couriway Town",
+      "zone_count": 6,
+      "zone_ids": [
+        38,
+        40,
+        41,
+        42,
+        43,
+        44
+      ]
+    },
+    {
+      "parent_map": 92,
+      "name": "Route 19",
+      "zone_count": 1,
+      "zone_ids": [
+        281
+      ]
+    },
+    {
+      "parent_map": 94,
+      "name": "Snowbelle City",
+      "zone_count": 9,
+      "zone_ids": [
+        222,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232
+      ]
+    },
+    {
+      "parent_map": 96,
+      "name": "Route 20",
+      "zone_count": 1,
+      "zone_ids": [
+        282
+      ]
+    },
+    {
+      "parent_map": 98,
+      "name": "Pokémon Village",
+      "zone_count": 1,
+      "zone_ids": [
+        318
+      ]
+    },
+    {
+      "parent_map": 100,
+      "name": "Route 21",
+      "zone_count": 2,
+      "zone_ids": [
+        283,
+        284
+      ]
+    },
+    {
+      "parent_map": 102,
+      "name": "Route 22",
+      "zone_count": 1,
+      "zone_ids": [
+        285
+      ]
+    },
+    {
+      "parent_map": 104,
+      "name": "Victory Road",
+      "zone_count": 8,
+      "zone_ids": [
+        320,
+        322,
+        323,
+        324,
+        325,
+        326,
+        327,
+        328
+      ]
+    },
+    {
+      "parent_map": 106,
+      "name": "Pokémon League",
+      "zone_count": 5,
+      "zone_ids": [
+        243,
+        244,
+        245,
+        246,
+        257
+      ]
+    },
+    {
+      "parent_map": 108,
+      "name": "Kiloude City",
+      "zone_count": 7,
+      "zone_ids": [
+        233,
+        234,
+        235,
+        237,
+        238,
+        239,
+        240
+      ]
+    },
+    {
+      "parent_map": 110,
+      "name": "Battle Maison",
+      "zone_count": 3,
+      "zone_ids": [
+        241,
+        242,
+        358
+      ]
+    },
+    {
+      "parent_map": 112,
+      "name": "Azure Bay",
+      "zone_count": 1,
+      "zone_ids": [
+        357
+      ]
+    },
+    {
+      "parent_map": 114,
+      "name": "Dendemille Gate",
+      "zone_count": 2,
+      "zone_ids": [
+        31,
+        32
+      ]
+    },
+    {
+      "parent_map": 116,
+      "name": "Couriway Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        39
+      ]
+    },
+    {
+      "parent_map": 118,
+      "name": "Ambrette Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        46
+      ]
+    },
+    {
+      "parent_map": 120,
+      "name": "Lumiose Gate",
+      "zone_count": 5,
+      "zone_ids": [
+        70,
+        71,
+        72,
+        73,
+        74
+      ]
+    },
+    {
+      "parent_map": 122,
+      "name": "Shalour Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        173
+      ]
+    },
+    {
+      "parent_map": 124,
+      "name": "Coumarine Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        189
+      ]
+    },
+    {
+      "parent_map": 126,
+      "name": "Laverre Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        201
+      ]
+    },
+    {
+      "parent_map": 128,
+      "name": "Anistar Gate",
+      "zone_count": 2,
+      "zone_ids": [
+        212,
+        213
+      ]
+    },
+    {
+      "parent_map": 130,
+      "name": "Snowbelle Gate",
+      "zone_count": 2,
+      "zone_ids": [
+        223,
+        224
+      ]
+    },
+    {
+      "parent_map": 132,
+      "name": "Glittering Cave",
+      "zone_count": 2,
+      "zone_ids": [
+        303,
+        304
+      ]
+    },
+    {
+      "parent_map": 134,
+      "name": "Connecting Cave",
+      "zone_count": 1,
+      "zone_ids": [
+        334
+      ]
+    },
+    {
+      "parent_map": 136,
+      "name": "Kalos Power Plant",
+      "zone_count": 4,
+      "zone_ids": [
+        335,
+        336,
+        337,
+        338
+      ]
+    },
+    {
+      "parent_map": 138,
+      "name": "Team Flare Secret HQ",
+      "zone_count": 4,
+      "zone_ids": [
+        339,
+        340,
+        341,
+        342
+      ]
+    },
+    {
+      "parent_map": 140,
+      "name": "Terminus Cave",
+      "zone_count": 6,
+      "zone_ids": [
+        343,
+        344,
+        345,
+        346,
+        347,
+        348
+      ]
+    },
+    {
+      "parent_map": 142,
+      "name": "Lost Hotel",
+      "zone_count": 1,
+      "zone_ids": [
+        349
+      ]
+    },
+    {
+      "parent_map": 144,
+      "name": "Chamber of Emptiness",
+      "zone_count": 1,
+      "zone_ids": [
+        350
+      ]
+    },
+    {
+      "parent_map": 146,
+      "name": "Sea Spirit’s Den",
+      "zone_count": 1,
+      "zone_ids": [
+        351
+      ]
+    },
+    {
+      "parent_map": 148,
+      "name": "Friend Safari",
+      "zone_count": 2,
+      "zone_ids": [
+        354,
+        355
+      ]
+    },
+    {
+      "parent_map": 150,
+      "name": "Blazing Chamber",
+      "zone_count": 2,
+      "zone_ids": [
+        247,
+        251
+      ]
+    },
+    {
+      "parent_map": 152,
+      "name": "Flood Chamber",
+      "zone_count": 2,
+      "zone_ids": [
+        248,
+        252
+      ]
+    },
+    {
+      "parent_map": 154,
+      "name": "Ironworks Chamber",
+      "zone_count": 2,
+      "zone_ids": [
+        249,
+        253
+      ]
+    },
+    {
+      "parent_map": 156,
+      "name": "Dragonmark Chamber",
+      "zone_count": 2,
+      "zone_ids": [
+        250,
+        254
+      ]
+    },
+    {
+      "parent_map": 158,
+      "name": "Radiant Chamber",
+      "zone_count": 2,
+      "zone_ids": [
+        255,
+        256
+      ]
+    },
+    {
+      "parent_map": 160,
+      "name": "Pokémon League Gate",
+      "zone_count": 1,
+      "zone_ids": [
+        321
+      ]
+    },
+    {
+      "parent_map": 162,
+      "name": "Lumiose Station",
+      "zone_count": 1,
+      "zone_ids": [
+        109
+      ]
+    },
+    {
+      "parent_map": 164,
+      "name": "Kiloude Station",
+      "zone_count": 1,
+      "zone_ids": [
+        236
+      ]
+    },
+    {
+      "parent_map": 166,
+      "name": "Ambrette Aquarium",
+      "zone_count": 1,
+      "zone_ids": [
+        48
+      ]
+    },
+    {
+      "parent_map": 168,
+      "name": "Unknown Dungeon",
+      "zone_count": 1,
+      "zone_ids": [
+        319
+      ]
+    }
+  ]
+}

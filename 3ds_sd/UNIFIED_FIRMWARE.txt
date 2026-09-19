@@ -1,0 +1,41 @@
+Pokebot3DS-CFW unified 3DS firmware path
+=========================================
+
+THIS PACKAGE USES ONE boot.firm FOR BOTH ORIGINAL 3DS AND NEW 3DS USERS.
+There is no separate N3DS desktop bot and no second SD-card boot.firm.
+
+Included firmware lineage:
+  Pokebot-Luma v0p7-n3ds-fb1-cpad
+  GitHub Actions workflow run: 34659684931
+  source head: 19019e5093a0ff31bc0086a1e7d6827b0bfc5cee
+  boot.firm SHA256: 1b0cb91d9816ca805955dff41debdddd28fa47c39b43a94f5b0407a5311564f8
+
+Protocol additions retained in this unified candidate:
+- UDP/4952 read-only RAM protocol.
+- UDP/4952 acknowledged HID/touch controller protocol.
+- Read-only framebuffer commands 11-12.
+- NEW: command 13 CPAD_PULSE with controller capability bit 0x100.
+- New 3DS service-latency changes:
+    * bridge worker priority 0x24 -> 0x20
+    * non-blocking socket poll
+    * 2 ms idle worker yield
+
+HF77 uses CPAD_PULSE for the Route 101 DexNav tutorial Poochyena sneak. The
+PC requests only a partial tilt and the firmware owns the hold/release timing.
+Each pulse returns the injected Circle Pad state to 0x007FF7FF neutral.
+
+Hardware status:
+- Firmware compiled successfully in GitHub Actions from the unified
+  framebuffer + New 3DS latency lineage.
+- Existing RAM/HID/touch architecture is preserved by protocol.
+- Command 13 is NEW and needs its first real-hardware validation in HF77.
+- Until that pass, automatic DexNav CPAD should be treated as test status.
+
+Rosalina setup:
+  Pokebot3DS Bridge -> Enable Both
+  Standard Rosalina InputRedirection -> OFF
+
+Safety:
+- RAM service remains read-only.
+- Shiny authority remains on the PC-side validated PK6 path.
+- CPAD command is controller state only; it does not write ORAS game RAM.
