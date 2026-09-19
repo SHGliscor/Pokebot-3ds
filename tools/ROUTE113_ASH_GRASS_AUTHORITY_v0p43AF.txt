@@ -1,0 +1,31 @@
+Route 113 Ash-covered Grass Authority - v0p43AF
+================================================
+
+Why this is now safe to classify
+--------------------------------
+The hardware proof linked a real Route 113 wild encounter to a manually
+identified ash-covered grass patch. The exact Alpha Sapphire base ROMFS field
+archive was then recovered and its Route 113 field-region movement permission
+grid parsed.
+
+All of the following hardware-observed local tiles share one exact permission:
+start [1,17], neighbours [0,17] [2,17] [1,16] [1,18], trail [3,17]
+[3,18] [3,19] [3,20] [3,21], and encounter trigger [3,22].
+
+Raw permission u32: 0x1F004004
+Stored byte form:    0440001F
+Semantic code:       31
+Runtime name:        Ash-covered grass
+
+Scope
+-----
+Only region 74 cells with this exact permission are promoted in this release.
+There are 56 such cells. No global promotion of semantic 31 is performed yet.
+This keeps the classifier fail-closed outside the hardware/ROMFS-correlated
+Route 113 field region.
+
+Safety
+------
+The normal core2 rule is unchanged. Ash-covered grass on the boundary is valid
+encounter terrain (core1), but Start Hunt still requires an interior tile with
+all four cardinal neighbours also encounter terrain (core2).

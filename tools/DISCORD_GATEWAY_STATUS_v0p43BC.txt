@@ -1,0 +1,40 @@
+Pokebot3DS-CFW v0p43BC — Discord Gateway Resume Recovery
+Date: 2026-08-27
+
+Scope
+-----
+Discord bot-account gateway reliability only. Hunt authority, movement, capture,
+post-capture handling, unified boot.firm, and personal Rich Presence are unchanged.
+
+Observed issue
+--------------
+The Discord bot account could show/drop OFFLINE after a transient gateway
+interruption while Personal Rich Presence remained fine.
+
+Root cause
+----------
+discord.py can recover a transient gateway interruption by resuming the existing
+session. In that case it dispatches on_resumed(), not on_ready().
+
+The previous Pokebot DiscordManager did this:
+  on_disconnect -> _connected = False
+  on_ready      -> _connected = True
+
+but it had no on_resumed handler. Therefore a successful Discord session resume
+could leave Pokebot's own _connected flag permanently false, disabling future
+notification submissions even though the Discord gateway had recovered.
+
+v0p43BC fix
+-----------
+- Adds on_connect state handling.
+- Adds on_resumed and restores _connected=True there.
+- Reapplies bot presence after a successful resume.
+- Treats on_disconnect as RECONNECTING rather than terminal OFFLINE while
+  client.start(..., reconnect=True) remains active.
+- Pauses Discord delivery during the actual disconnected interval.
+- Logs successful gateway session resumes in Discord event history.
+- Suppresses intentional-disconnect teardown exceptions from being reported as
+  false connection failures.
+- Genuine terminal connection/start/shutdown failures remain logged.
+
+No hunt logic changes.

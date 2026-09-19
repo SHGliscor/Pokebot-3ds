@@ -1,0 +1,271 @@
+{
+  "version": "v0p43AF",
+  "route": "Route 113",
+  "zone_id": 40,
+  "matrix_id": 8,
+  "matrix_cell": [
+    8,
+    2
+  ],
+  "region_id": 74,
+  "romfs_archive": "a/0/3/9",
+  "romfs_archive_sha256": "31a3335c4356b550e407017de9abd51c8b8ec7d71695eec0842d3f5082541109",
+  "region74_compressed_sha256": "e00628825050485038526f32c442c6286e5e2f249f699999e1bc27e3fabdcb78",
+  "region74_decompressed_sha256": "2fba01a606732d57750b9751c0d2e6b13e2a562a2313bf117e5e5fcfa78347b8",
+  "gr_container_section0_offset": 128,
+  "permission_grid": [
+    40,
+    40
+  ],
+  "proven_raw_permission_u32": "0x1F004004",
+  "runtime_raw_hex": "0440001F",
+  "semantic_code": 31,
+  "terrain_name": "Ash-covered grass",
+  "cells_promoted": 56,
+  "promoted_local_tiles": [
+    [
+      1,
+      15
+    ],
+    [
+      2,
+      15
+    ],
+    [
+      3,
+      15
+    ],
+    [
+      4,
+      15
+    ],
+    [
+      0,
+      16
+    ],
+    [
+      1,
+      16
+    ],
+    [
+      2,
+      16
+    ],
+    [
+      3,
+      16
+    ],
+    [
+      4,
+      16
+    ],
+    [
+      0,
+      17
+    ],
+    [
+      1,
+      17
+    ],
+    [
+      2,
+      17
+    ],
+    [
+      3,
+      17
+    ],
+    [
+      4,
+      17
+    ],
+    [
+      0,
+      18
+    ],
+    [
+      1,
+      18
+    ],
+    [
+      2,
+      18
+    ],
+    [
+      3,
+      18
+    ],
+    [
+      4,
+      18
+    ],
+    [
+      5,
+      18
+    ],
+    [
+      6,
+      18
+    ],
+    [
+      2,
+      19
+    ],
+    [
+      3,
+      19
+    ],
+    [
+      4,
+      19
+    ],
+    [
+      5,
+      19
+    ],
+    [
+      6,
+      19
+    ],
+    [
+      7,
+      19
+    ],
+    [
+      8,
+      19
+    ],
+    [
+      2,
+      20
+    ],
+    [
+      3,
+      20
+    ],
+    [
+      4,
+      20
+    ],
+    [
+      5,
+      20
+    ],
+    [
+      6,
+      20
+    ],
+    [
+      7,
+      20
+    ],
+    [
+      8,
+      20
+    ],
+    [
+      9,
+      20
+    ],
+    [
+      10,
+      20
+    ],
+    [
+      2,
+      21
+    ],
+    [
+      3,
+      21
+    ],
+    [
+      4,
+      21
+    ],
+    [
+      5,
+      21
+    ],
+    [
+      6,
+      21
+    ],
+    [
+      0,
+      22
+    ],
+    [
+      1,
+      22
+    ],
+    [
+      2,
+      22
+    ],
+    [
+      3,
+      22
+    ],
+    [
+      4,
+      22
+    ],
+    [
+      5,
+      22
+    ],
+    [
+      6,
+      22
+    ],
+    [
+      0,
+      23
+    ],
+    [
+      1,
+      23
+    ],
+    [
+      2,
+      23
+    ],
+    [
+      3,
+      23
+    ],
+    [
+      4,
+      23
+    ],
+    [
+      5,
+      23
+    ],
+    [
+      6,
+      23
+    ]
+  ],
+  "hardware_initial_grid": [
+    321,
+    97
+  ],
+  "hardware_initial_local": [
+    1,
+    17
+  ],
+  "hardware_trigger_grid": [
+    323,
+    102
+  ],
+  "hardware_trigger_local": [
+    3,
+    22
+  ],
+  "hardware_wild_species": 27,
+  "hardware_wild_species_name": "Sandshrew",
+  "ram_writes": false,
+  "scope": "REGION_74_ONLY"
+}
