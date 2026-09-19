@@ -1,0 +1,15 @@
+HF34 - XY Fennekin Continuous Hunt
+
+Hardware basis:
+- Pokémon Y GAME_INFO/party RAM validated.
+- Aquacorde LEFT trigger validated.
+- 47-dialogue-A chooser path validated.
+- Fennekin touch position validated.
+- Starter PK6 appears after up to 5 guarded post-selection A presses.
+
+Changes:
+- Fennekin now authorizes the next reset after a clean PASS.
+- Shiny or target match still holds immediately.
+- Invalid checksum/species/state still SafetyHolds.
+- Chespin and Froakie remain one-shot hardware validation.
+- ORAS behavior unchanged.

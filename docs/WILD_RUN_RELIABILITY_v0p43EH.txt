@@ -1,0 +1,30 @@
+Pokebot3DS-CFW v0p43EH — Wild Run reliability patch
+
+Hardware evidence
+-----------------
+Four Route 102 Safety HOLD bundles were compared:
+- 2026-08-31 07:50:29 — BridgeError: UDP timeout command=4 after encounter #1058
+- 2026-08-31 12:25:25 — BridgeError: UDP timeout command=4 after encounter #595
+- 2026-08-31 16:08:31 — BridgeError: UDP timeout command=4 after encounter #708
+- 2026-08-31 19:41:53 — post-escape FIELD_AUTHORITY_TIMEOUT after battle #700
+
+v0p43EH changes
+---------------
+1. CMD_READ timeout recovery is read-only and bounded.
+   After the existing read retries are exhausted, Wild mode performs up to two recovery rounds.
+   Each round revalidates PING + GAME_INFO and requires the same title ID, PID and process name before retrying the RAM read once.
+   If the bridge remains unavailable or process identity changes, the hunt still Safety HOLDs.
+
+2. Normal grass Wild post-escape field reacquisition now allows up to 8.0 seconds instead of 4.0 seconds.
+   The field authority predicate is unchanged: battle inactive, expected zone, duplicate coordinates match, settled tile center, proven encounter terrain, and the normal confirmation samples.
+   No gameplay input is sent during this wait.
+
+Unchanged
+---------
+- shiny/PK6 authority
+- Route 102 movement planning
+- native Run input
+- Auto Capture
+- Horde/Fishing/Cave/Surf-specific field authorities
+- firmware / boot.firm
+- game RAM remains read-only

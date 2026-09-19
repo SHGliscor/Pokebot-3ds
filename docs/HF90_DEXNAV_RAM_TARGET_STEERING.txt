@@ -1,0 +1,32 @@
+HF90 - DexNav RAM Target Steering
+=================================
+
+Source hardware probe:
+  DexNav_Overworld_Target_Probe_20260912_212241.zip
+  Omega Ruby 1.4, Route 101 tutorial Poochyena
+
+Proven target structure:
+  0x08D3B560 +0x00 float X = 1701.0
+  0x08D3B560 +0x04 float Y = 2.0
+  0x08D3B560 +0x08 float Z = 2331.0
+  0x08D3B560 +0x0C active flag = 1 while target is present
+  0x08D3B560 +0x10 object pointer
+  0x08D3B560 +0x14 active target pointer = 0x08D3B920 in this run
+
+Probe facts:
+  Before target spawn, the coordinate/active portion was zero.
+  Once visible, target coordinates stayed exactly 1701.0,2331.0 for all 25 live samples.
+  Player started at 1791.0,2349.0.
+  Battle contact occurred at about 1710.85266,2332.55713.
+  The +0x14 active target pointer cleared before battle state changed active.
+
+HF90 behavior:
+  * after LEFT + 17A and visible-stage RAM proof, require the target object to be active
+  * read player X/Z and target X/Z each correction
+  * derive shallow partial-CPAD direction from the live delta
+  * use 0.45-2.5 s corrections depending on remaining distance
+  * stop immediately when battle becomes active
+  * if the target disappears without battle, Safety Hold rather than move blindly
+  * if three corrections fail to converge, Safety Hold
+
+This replaces HF88/HF89 fixed-time/fixed-destination sneak calibration.

@@ -1,0 +1,12 @@
+Pokebot3DS-CFW v0p43DZ — Horde Honey Direct Two-A
+
+Baseline: v0p43DX.
+Honey Horde changes only:
+- Honey must be first active Items-pocket entry.
+- Before hunt start, user highlights Honey once and backs out to field.
+- Yellow Bag shortcut remains at (133,230).
+- Honey path sends no D-pad or pocket-navigation input.
+- Live Items controller must prove page=0, selector=0, item ID 94.
+- Honey use is exactly two A presses: A1 Select, A2 Use.
+- Any mismatch fails closed before item-use input.
+- Sweet Scent path and unrelated hunt logic unchanged.

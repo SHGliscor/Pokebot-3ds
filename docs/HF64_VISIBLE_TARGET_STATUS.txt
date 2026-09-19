@@ -1,0 +1,7 @@
+Pokebot3DS-CFW v0p43EJ HF64 — Visible Target Status
+
+- LOOK FOR TARGET now always shows the selected species directly on the dashboard.
+- Added a clear Target mode: OFF / Species target — ACTIVE / Trait-IV target — ACTIVE line.
+- Current hunt now includes Target filter and Target Search status rows.
+- Configured-but-disabled targets are explicitly shown as configured but not armed.
+- No hunting authority or target matching logic was changed; this is a visibility/UI status pass.

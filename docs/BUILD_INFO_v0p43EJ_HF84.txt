@@ -1,0 +1,17 @@
+Pokebot3DS-CFW v0p43EJ HF84
+Atomic MT Cursor Countdown
+
+Base: HF83 Live Shiny Frame Decay
+
+Fixes:
+- replaces the separate MT index/state/index cursor sample with one contiguous 8-byte RAM read
+- reads the 16-bit Gen-6 MT cursor and MT[0] period anchor together
+- removes false tracker blanking when the live RNG advances between reads (e.g. 597 -> 598)
+- keeps the locked shiny PID and decays NEXT SHINY from the live MT stream
+- automatically reacquires after the target frame passes or the RNG stream resets/reseeds
+- remains read-only/passive; no RNG manipulation and no new boot.firm required
+
+Validation:
+- HF84_ATOMIC_CURSOR_SELF_TEST.py PASS, including 597 -> 598 and ring wrap
+- HF81_RNG_TRACKER_SELF_TEST.py PASS
+- HF82_LOCKED_SHINY_COUNTDOWN_SELF_TEST.py PASS

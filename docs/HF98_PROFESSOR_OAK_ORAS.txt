@@ -1,0 +1,40 @@
+Pokebot3DS-CFW HF99 — ORAS Professor Oak Challenge
+
+Research basis
+---------------
+The OR/AS Professor Oak community maintains separate Omega Ruby and Alpha Sapphire routes. A 2023 Gen 6 spreadsheet was published with dedicated X, Y, Omega Ruby, Alpha Sapphire, ORAS Co-op and generational tabs:
+https://docs.google.com/spreadsheets/d/1Wu2JQ_IAH0kffegBDU6QgOpANysinFxzX-YhkxamhE8/edit?usp=sharing
+
+The Alpha Sapphire structural checklist used as the original HF98 base is also published here:
+https://altissimo1.github.io/Main-Series/ORAS/Pokedex/alphasapphire-only.html
+
+HF99 upgrades the tracker so Omega Ruby and Alpha Sapphire are separate, persistent
+checklists. Version-exclusive encounters and legendary routes are swapped for the
+Omega Ruby route instead of silently presenting Alpha Sapphire data as Omega Ruby.
+
+Features
+--------
+- Alpha Sapphire and Omega Ruby selector.
+- Progress is stored separately for each version.
+- Existing HF98 Alpha Sapphire progress is migrated automatically.
+- Search box for routes, species, evolutions, fishing, DexNav, etc.
+- Optional “Incomplete only” filter.
+- Persistent completion state per user profile.
+- Reset applies only to the currently selected version.
+- No hunt automation is started or changed by this page.
+
+Challenge totals
+----------------
+The AS source gives milestone Pokédex totals of 40, 53, 80, 104, 113, 133, 170,
+387, 390, 397 and 410 across the major progression gates. The tracker displays
+those target totals alongside the manual milestone count.
+
+Important
+---------
+Professor Oak Challenge rule sets vary. This tracker is deliberately manual: a
+checkbox represents completion of a researched catch/evolution milestone and does
+not claim that RAM can prove every required catch, evolution, breeding result, trade,
+or other challenge condition.
+
+The Omega Ruby list is kept separate because ORAS has version-exclusive species and
+legendaries. It should not be treated as an identical copy of Alpha Sapphire.

@@ -1,0 +1,26 @@
+HF59 - Pokémon Y Kalos World Authority Integration
+====================================================
+
+Packaged runtime database
+-------------------------
+pokebot/wild/world/pokemon_y_grass_runtime.sqlite
+
+It contains 360 zones, 227 matrices, 4,586 matrix-region links,
+63,696 matrix zone-switches and 6,924 classified encounter cells.
+
+The shared WorldMap loader now accepts both the existing ORAS schema and the
+Pokémon Y schema. The ORAS database itself and ORAS hunt path are unchanged.
+
+Why XY containment is not enabled yet
+-------------------------------------
+The static Kalos terrain database is ready, but the live Pokémon Y player zone
+and X/Z coordinate RAM addresses have not yet been hardware-proved. Guessing
+ORAS-equivalent addresses would make containment unsafe.
+
+RUN_XY_WORLD_AUTHORITY_MAPPER.bat performs a bounded read-only calibration.
+It sends zero controller inputs and zero RAM writes. Move manually according to
+the prompts. The tool ranks live coordinate and zone candidates and cross-checks
+them against the bundled Kalos matrix database.
+
+After that report confirms the RAM authority, the next build can replace the
+temporary HF57 left/right pattern with database-contained movement.

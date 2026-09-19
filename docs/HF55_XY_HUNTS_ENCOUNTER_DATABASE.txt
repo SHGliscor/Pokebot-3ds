@@ -1,0 +1,42 @@
+HF55 — Pokémon Y game-file encounter database for HUNTS
+
+Source authority
+----------------
+User-extracted Pokémon Y RomFS archive a/0/1/2.
+No web encounter list is used for the roster.
+
+Parser
+------
+The build follows pk3DS XYWE's fixed X/Y encounter layout:
+  0x178 bytes / 94 four-byte slots
+  12 Grass
+  12 Yellow Flowers
+  12 Purple Flowers
+  12 Red Flowers
+  12 Rough Terrain
+   5 Surf
+   5 Rock Smash
+   3 Old Rod
+   3 Good Rod
+   3 Super Rod
+   5 Horde A
+   5 Horde B
+   5 Horde C
+
+Each slot is species/form in u16 followed by minimum and maximum level bytes.
+The zone package is matched to the HF53 authoritative 360-record ZoneData
+master table via its embedded 0x38-byte ZoneData record, rather than assuming
+GARC ordering. The parent-map field then joins each zone to its Kalos location.
+
+UI
+--
+HUNTS is now a Gen 6 encounter browser and accepts pokemon_y GAME_INFO.
+Pokémon Y locations and species/method rosters populate from data/xy_encounters.json.
+X/Y hunt buttons remain intentionally disabled until wild automation is
+hardware-proven. ORAS behavior and ORAS encounter data are unchanged.
+
+Pokémon X
+---------
+Pokémon X is listed in the browser but its encounter roster is intentionally
+not synthesized from Pokémon Y because version-exclusive slots differ. Build
+its database from the X a/0/1/2 archive when supplied.

@@ -1,0 +1,23 @@
+Pokebot3DS-CFW v0p43EJ HF31 — XY Continue Handoff Fix
+
+Observed hardware symptom
+- X/Y booted and Continue worked.
+- Player visibly reached the overworld.
+- Required Aquacorde LEFT input was never sent.
+
+Root cause
+- DllTitle may remain resident while the A press that actually activates Continue is sent.
+- HF30 classified that acknowledged A as a title input.
+- continue_inputs therefore remained zero even though the save loaded.
+- The reset route never handed off to xy_kalos.py, so LEFT was never called.
+
+Fix
+- Record when DllStartMenu is observed in the fresh X/Y process.
+- Count any acknowledged A sent after that point as a post-start-menu A, regardless of stale DllTitle presence.
+- Authorize field handoff when DllField is stably present after at least one such A.
+- Preserve the existing xy_kalos LEFT x1 and chooser visual gate.
+
+Safety
+- No XY code.ips requirement.
+- ORAS reset/choreography untouched.
+- Field gate still requires two stable DllField samples.

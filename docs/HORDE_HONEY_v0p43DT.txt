@@ -1,0 +1,58 @@
+Pokebot3DS-CFW v0p43DT — Horde Honey Any-Bag-Slot
+====================================================
+
+BASE
+----
+v0p43DS Cumulative Phase / Stats / Cleanup.
+The proven Sweet Scent-any-party-slot path is preserved.
+
+HORDE TRIGGER UI
+----------------
+Auto — Sweet Scent, then Honey
+Sweet Scent
+Honey — locate anywhere in Bag
+
+Auto performs read-only preflight. It keeps Sweet Scent when the existing
+proven setup is available; otherwise it requires live Honey authority before
+starting.
+
+HONEY INVENTORY AUTHORITY
+-------------------------
+Honey is identified by item ID 94 (0x005E), never by a fixed Bag row.
+The ORAS 1.4 live Items pocket is read-only scanned for the item ID and
+quantity. Any save/item slot is accepted.
+
+FIELD BAG SAFETY
+----------------
+1. Verify stationary overworld/battle-inactive authority.
+2. Open field menu once with X.
+3. Touch the fixed Field Menu Bag tile once.
+4. Cycle Bag pockets only as needed until the live DllBag controller contains
+   an exact copy of the current Items-pocket item-id/quantity sequence.
+5. Derive the Honey active-entry index from that live list.
+6. Navigate with one D-pad pulse at a time.
+7. After each pulse, re-read the live controller/cursor.
+8. Keep all plausible global/page/local cursor encodings alive.
+9. Press A only when every surviving cursor model agrees Honey is selected.
+10. Press Use once, never replay it.
+11. Battle-active RAM must appear.
+12. Honey inventory must decrement by exactly one.
+
+If field DllBag uses an unanticipated layout, the test safety-holds before an
+item-use A and logs controller/page/selector evidence for the next patch.
+
+NO RAM WRITES
+-------------
+All inventory/controller RAM use is read-only. Honey is consumed only through
+normal game UI/controller input.
+
+HONEY STOCK
+-----------
+The preflight requires quantity > 0. Repeated Hordes re-read stock before each
+use, so x999 is handled normally until the hunt stops or stock reaches zero.
+
+TESTS
+-----
+Whole-tree compileall: PASS
+tools/offline_regression.py: PASS (includes Honey non-fixed-slot authority)
+tools/release_integrity.py: PASS

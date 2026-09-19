@@ -1,0 +1,20 @@
+Pokebot3DS-CFW HF91 — DexNav adaptive-gain RAM steering
+
+Hardware evidence from support ZIP 20260912_213654:
+- Target RAM: X=1701.0 Z=2331.0 remained valid.
+- Player started X=1791.0 Z=2349.0.
+- HF90 X=-0.40 moved the player left at only about 4.6-4.8 world units/s.
+- HF90 Y=+0.16 produced no measurable Z movement; Z remained exactly 2349.0.
+- Steering stalled at X=1718.01196 Z=2349.0, still ~18 Z units below target.
+- The successful physical-stick HF89 probe moved approximately 14-16 world units/s
+  during its main approach and reached ~1710.85,2332.56 before battle.
+
+HF91 changes:
+- Far horizontal partial-CPAD authority raised up to 0.55.
+- Initial vertical authority raised to 0.32 when >14 Z units away.
+- If an acknowledged correction makes <0.30 Z movement while vertical error remains,
+  vertical authority escalates automatically (0.40 -> 0.46 -> 0.48 cap).
+- Corrections are shorter because gain is higher, so RAM can re-steer more frequently.
+- Target coordinates, field authority, target active pointer, and battle RAM remain the
+  terminal authorities. No blind fixed destination is restored.
+- Existing HF85 persistent passive RNG telemetry is retained.

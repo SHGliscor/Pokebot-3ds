@@ -1,0 +1,11 @@
+HF58A XY Initial Field Gate Fix
+================================
+- Fixes HF58 main-Hunts XY SafetyHold before movement where DllField was not
+  observed through the integrated stop-aware bridge.
+- CRO state detection now mirrors the hardware-proven HF57 standalone tester
+  by using a plain read-only Bridge for DllField/DllBattle enumeration.
+- Authoritative XY wild PK6 reads remain on the stop-aware worker bridge.
+- XY movement, repeated RUN-touch behavior, shiny/target gates and RAM-write
+  policy are unchanged.
+- Support-session game label now falls back to the actual detected game rather
+  than the stale 'RAM-detected ORAS' string.

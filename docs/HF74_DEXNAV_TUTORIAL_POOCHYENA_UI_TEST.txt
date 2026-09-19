@@ -1,0 +1,32 @@
+SUPERSEDED BY HF76: hardware support testing showed two additional A presses are required; current sequence is LEFT + 14 A presses.
+
+Pokebot3DS-CFW v0p43EJ HF74 - DexNav Tutorial Poochyena UI test
+
+Based on HF73 N3DSAdaptiveBattleGateGrace.
+
+Hardware mapper authority from 2026-09-11/12:
+- Omega Ruby Route 101, zone 23
+- exact pre-tutorial save world position: 1917,2349
+- LEFT enters the rival tutorial and reaches 1899,2349
+- HF74 originally assumed exactly 12 A presses; HF76 corrects this to 14
+- Poochyena-visible post-dialogue world position: 1791,2349
+- physical Circle Pad sneak successfully entered battle
+- opponent PK6: Poochyena #261, Lv.5, valid checksum/TID/SID
+- tutorial elemental Fang present (Thunder Fang in the mapped run)
+
+HF74 integration:
+- adds Poochyena - Route 101 (DexNav Tutorial) under Static
+- reset-first saved-position authority
+- automated LEFT + 14-A dialogue sequence in HF76 (HF74 used 12)
+- RAM position checks before and after dialogue
+- manual physical Circle Pad sneak gate (SNEAK NOW)
+- normal state=2 battle PK6 boundary
+- extra tutorial identity gate: species 261 + Lv.5 + one of Thunder/Ice/Fire Fang
+- non-shiny soft resets to the saved tutorial position
+- shiny stops immediately with no further battle input
+
+IMPORTANT:
+This is deliberately a UI/choreography test build, not yet a fully autonomous hunt.
+The acknowledged UDP/4952 protocol in the packaged HF73 boot.firm has HID/touch but no
+Circle Pad pulse command. Do not use D-pad at SNEAK NOW. The next firmware step is an
+acknowledged CPAD pulse so the sneak can be automated without re-enabling legacy 4950.

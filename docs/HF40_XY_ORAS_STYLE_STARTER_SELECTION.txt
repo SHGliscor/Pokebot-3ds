@@ -1,0 +1,30 @@
+HF40 - X/Y ORAS-style Kalos starter selector
+
+Purpose
+-------
+Remove the HF35-HF39 experimental XY touch/coordinate selection path and reuse
+the proven ORAS starter chooser input ordering while keeping X/Y-specific reset,
+Aquacorde dialogue, CRO+framebuffer chooser-ready gate, and X/Y Party Slot 1 PK6
+authority.
+
+Selector sequence after X/Y chooser-ready gate
+-----------------------------------------------
+1. A using the proven ORAS selector pulse shape (300/220/30/120 ms) to
+   activate/establish the centre choice.
+2. Wait 0.35 s.
+3. Chespin: LEFT once. Fennekin: no direction. Froakie: RIGHT once.
+4. Wait 0.35 s after a side movement.
+5. A using the same ORAS pulse shape to select.
+6. Poll X/Y Party Slot 1 PK6 between each of up to five guarded confirmation A
+   presses. Stop inputs immediately when a valid starter exists.
+
+Authority
+---------
+Chespin = species 650
+Fennekin = species 653
+Froakie = species 656
+Valid checksum and matching X/Y TID/SID are required. Wrong species or invalid
+state fails closed. Chespin and Froakie remain one-shot hardware tests until
+proven. Fennekin continuous hunt behavior is otherwise unchanged.
+
+ORAS behavior and canonical boot.firm are unchanged.

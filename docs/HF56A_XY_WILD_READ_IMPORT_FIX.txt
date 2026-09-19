@@ -1,0 +1,6 @@
+HF56A — XY normal-wild read launcher import fix
+
+Fixes ModuleNotFoundError: No module named 'pokebot' when RUN_XY_NORMAL_WILD_READ_TEST.bat launches tools\xy_normal_wild_read_test.py.
+
+The test now inserts the packaged bot root into sys.path before importing pokebot.
+No hunt logic, firmware, RAM addresses, controller behavior, ORAS behavior, or encounter databases were changed.

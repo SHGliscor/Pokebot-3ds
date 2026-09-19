@@ -1,0 +1,26 @@
+HF58 — X/Y Normal Wild Hunts Integration
+
+Base: HF57 hardware-validation build supplied by the user.
+
+Changes
+- HUNTS remains GAME_INFO-authoritative and hard-switches ORAS vs X/Y datasets.
+- Pokémon X/Y exposes only the hardware-proven Normal Wild (Run) method.
+- X/Y land encounter cards (grass, flower colours, rough terrain) can arm the main Wild workflow.
+- Main Wild worker branches to the X/Y path before ORAS world/terrain authority is installed.
+- X/Y uses wild PK6 0x081FF744 + checksum + save TID/SID authority.
+- Movement is the HF57 bounded 600ms B+direction oscillation.
+- Non-shiny escape keeps HF57 repeated RUN touches unchanged (up to 8).
+- DllBattle disappearance + stable DllField return is required before movement resumes.
+- No RAM writes are introduced.
+- ORAS runtime path is unchanged after the family branch.
+- HF57 standalone loop tester remains packaged for diagnostics.
+
+Enabled X/Y Hunts sections
+- Grass
+- Yellow Flowers
+- Purple Flowers
+- Red Flowers
+- Rough Terrain
+
+Browser-only X/Y sections remain disabled from automation: Surf, rods, Rock Smash, Horde.
+Pokémon X encounter cards remain dependent on an X encounter dataset; Y data is never copied into X.

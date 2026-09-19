@@ -1,0 +1,19 @@
+Pokebot3DS-CFW v0p43DX — Horde Honey Slot-1 Home Fast Path
+===========================================================
+
+Hardware feedback from v0p43DW:
+- yellow Bag shortcut at (133,230) opens the correct Bag.
+- Honey is first in Items, but ORAS remembers the previous cursor and DW walked
+  back to index 0 one row at a time.
+
+DX behavior:
+1. Touch yellow Bag shortcut.
+2. Locate/prove the live Items controller.
+3. Confirm Honey is active index 0 from save-backed Items RAM.
+4. If already at top, use immediately.
+5. Otherwise hold UP (game key-repeat) in bounded bursts; never scroll DOWN.
+6. After each burst require all live cursor models to agree on index 0.
+7. Require first controller entry item ID 94 (Honey).
+8. Only then Select A -> Use A.
+
+No game RAM writes. Sweet Scent is unchanged.

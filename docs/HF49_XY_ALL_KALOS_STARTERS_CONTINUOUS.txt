@@ -1,0 +1,13 @@
+HF49 — XY All Kalos Starters Continuous Hunt
+
+Hardware proof completed on Pokémon Y for all three Kalos starters using the acknowledged UDP 4952 triple-touch chooser path:
+- Chespin: species 650
+- Fennekin: species 653
+- Froakie: species 656
+
+Changes from HF48:
+- Removes the one-attempt hardware-test restriction for Chespin and Froakie.
+- Chespin, Fennekin, and Froakie now all authorize the next reset after a clean PASS.
+- Shiny, target match, wrong species, invalid checksum, TID/SID mismatch, or invalid state still fail closed / HOLD.
+- Existing XY reset, Aquacorde dialogue, triple-touch chooser, and PK6 authority are unchanged.
+- ORAS behavior and canonical boot.firm are unchanged.

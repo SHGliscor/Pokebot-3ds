@@ -1,0 +1,14 @@
+Pokebot3DS-CFW v0p43EJ Startup / Static RAM Hotfix
+
+Base: v0p43EJ Startup History Schema Guard
+
+Applied fixes:
+- one retry for idempotent Static u32 RAM reads on TimeoutError
+- lazy/cached Stats ledger loading; streamed JSONL reads
+- one-time legacy AppData migration discovery
+- deferred startup connection/Discord work
+- reduced Idle Party Viewer QThread/RAM refresh cadence to 1 second
+- lazy Wild/Static/Gift worker imports
+- startup construction timing breadcrumb in shutdown diagnostics
+
+See STARTUP_STATIC_HOTFIX_v0p43EJ.txt for the threading audit and preservation notes.

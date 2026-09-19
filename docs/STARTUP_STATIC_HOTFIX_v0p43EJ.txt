@@ -1,0 +1,18 @@
+Pokebot3DS-CFW v0p43EJ Startup / Static RAM Hotfix
+
+Changes
+=======
+1. Static battle-state u32 RAM reads retry the identical idempotent 4-byte read once on TimeoutError before SAFETY HOLD. Controller writes are not retried.
+2. Statistics no longer parses the complete encounter ledger during application construction. Stats load on first Statistics-tab visit and unchanged ledgers are cached between visits.
+3. Statistics JSONL parsing is streamed line-by-line to reduce memory pressure.
+4. Legacy package-folder/AppData migration discovery runs once (guarded by migration_v1.json) instead of rescanning sibling Pokebot builds every launch. Missing baseline files are still created safely on later versions.
+5. Automatic connection/Discord startup work is deferred briefly so the dashboard can paint first.
+6. Idle Party Viewer remains hunt-independent, but refresh cadence is 1 second instead of 500 ms to reduce repeated QThread creation/RAM traffic on lower-end PCs.
+7. Startup diagnostics now record MAIN_WINDOW_CONSTRUCTED elapsed_ms for future support ZIP diagnosis.
+
+Thread audit
+============
+- Existing auxiliary-QThread shutdown guard is retained: close is deferred until IdlePartyRefreshThread, ConnectionProbeThread, and tool threads return naturally.
+- No blocking QThread.wait() or unsafe QThread.terminate() was added.
+- Hunt thread close safety remains unchanged: an active hunt must reach its existing safe boundary before window destruction.
+- Discord/RPC Python workers remain daemon/cooperative services and are not part of the Qt destroyed-thread warning path.

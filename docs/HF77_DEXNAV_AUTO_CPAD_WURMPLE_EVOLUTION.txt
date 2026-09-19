@@ -1,0 +1,42 @@
+Pokebot3DS-CFW v0p43EJ HF77
+================================
+
+DexNav tutorial Poochyena
+-------------------------
+- Keeps the hardware-proven Route 101 entry sequence: LEFT -> 14 x A.
+- Dialogue A presses retain a 120 ms acknowledged hold but reduce the post-A
+  settle from 2300 ms to 1300 ms.
+- Replaces the manual SNEAK NOW gate with acknowledged Circle Pad pulses.
+- Uses partial left tilt (-0.40, 0.00), never D-pad movement.
+- Sneak movement is bounded to 12 pulses and RAM-validates Route 101 authority
+  and monotonic leftward progress after each pulse.
+- Battle entry remains RAM-authoritative before PK6 is trusted.
+- Poochyena identity still requires species 261, level 5, valid PK6/checksum,
+  and one of the tutorial elemental Fang moves.
+
+Pokebot-Luma controller
+-----------------------
+- Adds UDP/4952 command 13: INPUT_CPAD_PULSE.
+- Adds capability bit 0x100 (combined controller capabilities 0x1CF).
+- Circle Pad state uses Luma's existing 12-bit packed axis format.
+- CPAD pulses are sequence-aware and 3DS-timed like existing HID/touch pulses.
+- RELEASE_ALL and pulse completion always return the remote Circle Pad to
+  0x007FF7FF neutral.
+- RAM service remains read-only.
+
+Wurmple evolution
+-----------------
+- Recent encounter/shiny history has an Evolution column again.
+- Wurmple prediction is derived from the Gen VI Encryption Constant, not PID:
+  upper16(EC) % 10 = 0..4 -> Silcoon -> Beautifly;
+  upper16(EC) % 10 = 5..9 -> Cascoon -> Dustox.
+- Saved history rows missing the old predicted_evolution field are backfilled
+  from their stored EC when loaded.
+
+Hardware scope
+--------------
+- The LEFT -> 14 x A dialogue route and Poochyena PK6 gate are hardware-proven
+  on Omega Ruby.
+- Automatic CPAD is new in HF77 and requires a hardware pass before it should
+  be marked proven.
+- Alpha Sapphire parity for this specific tutorial profile is still pending.

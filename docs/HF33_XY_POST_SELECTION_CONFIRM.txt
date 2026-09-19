@@ -1,0 +1,7 @@
+HF33 XY Kalos starter update
+
+- Keeps HF32 post-field 2.0 s settle + LEFT trigger unchanged.
+- Keeps framebuffer + DllPoke3Select chooser-ready gate unchanged.
+- Extends post-starter-selection confirmation from 2 to 5 A presses maximum.
+- Party Slot 1 PK6 is polled between every A press; input stops immediately once the expected starter is present.
+- ORAS behavior is unchanged.

@@ -1,0 +1,57 @@
+Pokebot3DS-CFW HF73
+DEXNAV TUTORIAL POOCHYENA MAPPER PROBE v0p1
+
+PURPOSE
+-------
+This is a calibration/mapping probe only. It does NOT add a Hunt UI entry yet.
+
+It maps the complete scripted Route 101 DexNav tutorial sequence:
+  loaded save -> tutorial text/dialogue -> hidden Poochyena appears
+  -> manual Circle Pad sneak -> battle -> opponent PK6
+
+WHY PROBE FIRST
+---------------
+The tutorial has scripted text before the encounter. Hard-coding A presses into
+the production hunt before proving the exact sequence risks consuming/scaring
+the one-time tutorial encounter.
+
+HOW TO RUN
+----------
+1. Keep a save from BEFORE the Route 101 DexNav tutorial Poochyena is consumed.
+2. Start ORAS and enable the normal Pokebot RAM/Input bridge.
+3. Load that save and stand at the calibration start point.
+4. Run:
+       DEXNAV_TUTORIAL_POOCHYENA_PROBE.bat
+5. Use A/B/etc from the probe to advance dialogue.
+6. Use T whenever useful to label the text currently visible. The probe also
+   captures top/bottom framebuffer images after each input.
+7. When the hidden Poochyena is visibly present, press P.
+8. Press S. While the RAM watcher is active, use the PHYSICAL Circle Pad to
+   sneak toward Poochyena.
+9. The probe automatically stops input when battle RAM becomes active, waits
+   for the proven PK6 boundary, reads the opponent, and validates:
+       Species 261 Poochyena
+       Level 5
+10. Upload the generated DexNav_Tutorial_Poochyena_Probe_*.zip.
+
+SAFETY
+------
+- Read-only game RAM.
+- No UI integration.
+- No automatic reset loop.
+- No automatic Circle Pad movement.
+- D-pad movement is blocked after Poochyena is marked visible.
+- The current acknowledged UDP/4952 controller has no Circle Pad command, so
+  the first mapper deliberately uses physical Circle Pad input for the sneak.
+- The probe never decides shiny status from framebuffer images; PK6 remains
+  authoritative.
+
+OUTPUT
+------
+The support ZIP contains:
+- report.json
+- events.jsonl
+- top/bottom screenshots for checkpoints
+- RAM snapshots around shared ORAS field/battle state
+- raw opponent PK6 if battle is reached
+- decoded PK6 result and species/level validation

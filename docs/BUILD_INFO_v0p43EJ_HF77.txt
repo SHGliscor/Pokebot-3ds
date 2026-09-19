@@ -1,0 +1,20 @@
+Pokebot3DS-CFW v0p43EJ HF77
+
+Base: HF76 DexNav Tutorial 14-A + restored profile selectors.
+
+Changes:
+- Added acknowledged Circle Pad controller command 13 (CPAD_PULSE).
+- Bundled CI-built Pokebot-Luma v0p7-n3ds-fb1-cpad boot.firm.
+- Automated the DexNav tutorial Poochyena sneak with bounded partial-left CPAD pulses.
+- Reduced DexNav tutorial A settle from 2300 ms to 1300 ms.
+- Restored Wurmple split-evolution visibility in History and history reload/backfill.
+
+Firmware build proof:
+- GitHub Actions run: 34659684931
+- source head: 19019e5093a0ff31bc0086a1e7d6827b0bfc5cee
+- boot.firm SHA256: 1b0cb91d9816ca805955dff41debdddd28fa47c39b43a94f5b0407a5311564f8
+
+Hardware status:
+- LEFT + 14A tutorial route and Poochyena PK6 identity gate: proven on Omega Ruby.
+- CPAD command 13 / automatic sneak: NEW, hardware validation required.
+- Alpha Sapphire parity for this profile: pending.

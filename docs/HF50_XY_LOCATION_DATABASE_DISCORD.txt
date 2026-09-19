@@ -1,0 +1,22 @@
+HF50 — X/Y location database + Discord Rich Presence routing
+
+Problem
+- Starter Rich Presence contained hard-coded ORAS "Route 101" fallbacks.
+- Pokémon X/Y could therefore display Route 101 even though GAME_INFO correctly identified X/Y.
+
+Changes
+- Added pokebot/common/xy_locations.py with the Kalos Gen 6 location-text IDs (0..168 range, named entries only).
+- Added pokebot/common/gen6_locations.py to route location lookup by game family.
+- Kalos starter location resolves from XY location ID 10 = Aquacorde Town.
+- Starter worker stats now emit family-correct location_name.
+- main_window starter Discord context now uses family-correct location rather than hard-coded Route 101.
+- discord_rich_presence final starter fallback is game-aware (Aquacorde Town for X/Y, Route 101 for ORAS).
+
+Authority / provenance
+- Location indices follow the Gen 6 X/Y location text indexing used by the game/PKHeX.
+- PKHeX encounter data independently identifies Kalos starters as Location=10 (Aquacorde Town).
+- ORAS location database and ORAS hunt behavior are unchanged.
+
+Scope
+- This fixes starter Rich Presence immediately and establishes a separate XY location database foundation.
+- Runtime XY world-map/zone RAM mapping for wild hunting remains a later hardware-mapping task; this build does not pretend a met-location ID is already the live world-zone pointer.

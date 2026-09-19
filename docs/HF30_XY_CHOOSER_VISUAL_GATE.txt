@@ -1,0 +1,41 @@
+Pokebot3DS-CFW v0p43EJ HF30 — XY Chooser Visual Gate
+
+Observed HF29 hardware failure
+------------------------------
+The LEFT field trigger worked, but the bot stopped advancing before the end of
+the Aquacorde group dialogue.  The reason is that DllPoke3Select can be loaded
+before its three-ball starter chooser is actually visible.
+
+HF30 change
+-----------
+CRO presence is now capability evidence only.  It is not a UI-ready gate.
+
+After the shared reset/title/Continue path and the single LEFT trigger, HF30:
+1. Advances the group/nickname dialogue with A.
+2. When DllPoke3Select is loaded, samples sparse live rows from the bottom
+   framebuffer over UDP/4952.
+3. Counts red-dominant pixels independently in the left, centre, and right
+   Poke Ball zones.
+4. Stops dialogue A input only when all three ball zones pass the visual gate.
+5. Requires the existing DllPoke3Select CRO identity check as a second gate.
+6. Only then sends the configured starter touch selection.
+
+Safety
+------
+- If framebuffer telemetry is unavailable after the chooser CRO appears, the
+  attempt stops rather than guessing.
+- If any valid Party Slot 1 PK6 appears while still in dialogue, the attempt
+  stops immediately (unexpected-selection hold).
+- Party Slot 1 checksum/species/TID/SID remains authoritative after selection.
+- First XY starter attempts remain one-shot during hardware validation.
+
+Online cross-check
+------------------
+Walkthrough evidence agrees on the semantic order:
+Aquacorde group -> choose/confirm player nickname -> choose starter -> optional
+starter nickname -> Pokedex/Professor's Letter.  The real chooser bottom screen
+contains three red Poke Balls in a chest, which is the visual feature used here.
+
+Packaging
+---------
+Future bot ZIPs must retain one top-level folder.

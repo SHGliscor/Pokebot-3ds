@@ -1,0 +1,17 @@
+HF41 - X/Y manually confirmed Kalos starter chooser sequence
+
+Manual hardware confirmation on Pokemon Y established:
+- First LEFT: activates/highlights Fennekin
+- Chespin: LEFT again
+- Fennekin: no second horizontal input
+- Froakie: RIGHT after the first LEFT
+- A: opens Yes/No confirmation
+- A: confirms Yes
+
+Implemented sequences:
+Chespin  = LEFT -> LEFT -> A -> A
+Fennekin = LEFT -> A -> A
+Froakie  = LEFT -> RIGHT -> A -> A
+
+The existing X/Y reset, Aquacorde group trigger, dialogue advancement, chooser
+visual/CRO gate, and Party Slot 1 PK6 authority are unchanged.

@@ -1,0 +1,6 @@
+Pokebot3DS-CFW v0p43EJ HF75
+Profile Selector Restore + DexNav Tutorial Poochyena
+
+Base: HF74 DexNav Tutorial Poochyena UI test
+Fix: restore visible shared profile dropdown for Static, Gifts and Fishing.
+No static/gift profile data removed; existing backend registries remain authoritative.

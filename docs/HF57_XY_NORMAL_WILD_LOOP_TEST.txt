@@ -1,0 +1,43 @@
+HF57 — Pokémon X/Y controlled normal-wild loop hardware validation
+
+Purpose
+-------
+Promote the already hardware-proven X/Y wild PK6 read into the first bounded
+movement -> encounter -> read -> Run -> field-return loop without changing the
+proven ORAS Wild worker.
+
+Run
+---
+RUN_XY_NORMAL_WILD_LOOP_TEST.bat
+
+Start in the overworld, standing in a normal encounter area with room to move
+along the selected direction/axis. The default test count is 3 encounters.
+
+Authority / safety
+------------------
+* GAME_INFO must identify Pokémon X or Pokémon Y.
+* Start state must have stable DllField and no DllBattle.
+* Movement uses acknowledged B+direction 600 ms pulses and reverses frequently.
+* A new encounter is accepted only from a new checksum-valid PK6 at the
+  hardware-proven X/Y wild address 0x081FF744.
+* Wild PK6 TID/SID must match the save trainer IDs.
+* Shiny => immediate SHINY HOLD; no Run touch.
+* Optional target species => TARGET HOLD; no Run touch.
+* Invalid/mismatched authority => SafetyHold; inputs released.
+* Non-shiny battle uses the existing Gen-6 RUN touch (160,220), but only while
+  DllBattle is present. This exact X/Y use is what HF57 is intended to validate.
+* Success requires DllBattle to disappear and DllField to return stably before
+  any further movement.
+* Controller acknowledgement never substitutes for RAM/CRO authority.
+* No game RAM writes are performed.
+* Ctrl+C/manual termination releases controller input.
+
+Scope
+-----
+This is deliberately a separate hardware-validation launcher. XY Wild remains
+unavailable in the main Hunts controls until this loop is hardware-proven.
+ORAS behavior, encounter database, and canonical boot.firm are unchanged.
+
+Output
+------
+support\xy_normal_wild_loop_YYYYMMDD_HHMMSS.json

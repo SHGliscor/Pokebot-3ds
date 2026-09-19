@@ -1,0 +1,19 @@
+HF56 — Game-aware Hunts + XY normal-wild read validation
+
+HUNTS:
+- GAME_INFO is the sole authority for which encounter database is visible.
+- OR/AS shows ORAS records only.
+- X/Y shows X/Y records only.
+- No Alpha Sapphire fallback while disconnected.
+- Any game transition clears stale route/location selection before rebuilding the browser.
+- Manual game override was removed/locked to prevent cross-family mixing.
+- Pokémon X remains empty until its own encounter archive is compiled; Pokémon Y uses the hardware/game-file-derived Y database.
+
+XY NORMAL WILD TEST:
+- RUN_XY_NORMAL_WILD_READ_TEST.bat
+- read-only; sends zero controller input and performs zero RAM writes.
+- verifies GAME_INFO family=XY.
+- waits for a checksum-valid wild PK6 at the known XY wild address 0x081FF744.
+- validates trainer IDs against live XY TID/SID RAM.
+- prints species/checksum/shiny state and writes support/xy_normal_wild_read_*.json.
+- does not move, run, throw balls, or loop encounters.

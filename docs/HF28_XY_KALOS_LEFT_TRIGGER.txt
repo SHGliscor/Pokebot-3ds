@@ -1,0 +1,42 @@
+Pokebot3DS-CFW v0p43EJ HF28 — XY Kalos Starter LEFT Trigger
+================================================================
+
+Base
+----
+HF27 XY Kalos Starter CRO hardware-test build. ORAS behavior is unchanged.
+
+Change
+------
+The saved Aquacorde starter-hunt position requires exactly one LEFT press after
+the shared Gen 6 reset/title/Continue route has returned to DllField, and before
+the first group-dialogue A press. HF28 adds that transition explicitly.
+
+XY starter route
+----------------
+soft reset
+-> shared ORAS/Gen6 title + Continue timings
+-> XY DllField gate (save loaded)
+-> verify Party Slot 1 is empty
+-> LEFT x1 (Aquacorde friends/table event trigger)
+-> A advances nickname/dialogue only until DllPoke3Select is CRO-proven loaded
+-> touch configured starter ball
+-> at most two A confirmations
+-> Party Slot 1 at 0x08CE1CF8 becomes authority
+-> checksum + species + TID/SID validation
+-> shiny/target HOLD; normal result ends the one-shot hardware test
+
+Evidence
+--------
+- Multiple XY walkthroughs describe the player being called to the group/table
+  on the left in Aquacorde before nickname and starter selection.
+- Hardware setup confirmation: one LEFT press is required after Continue from
+  the user's exact saved hunt position.
+- Y update 1.5 static data contains DllPoke3Select.cro; HF27/HF28 gate the
+  chooser by that module identity rather than blind timing.
+- The real XY chooser UI has Chespin left, Fennekin center/default, Froakie
+  right, matching the configured touch targets.
+
+code.ips
+--------
+X/Y do not require code.ips. Existing ORAS title-specific code.ips files remain
+only for ORAS compatibility and are ignored by the XY starter backend.

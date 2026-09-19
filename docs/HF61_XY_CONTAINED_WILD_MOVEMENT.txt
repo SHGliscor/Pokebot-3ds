@@ -1,0 +1,28 @@
+HF61 - Pokémon Y Database-Contained Wild Movement
+===================================================
+
+Production authority:
+X     0x08C670BC
+Z     0x08C670C4
+Zone  0x08C67190
+Tile scale: 18 world units
+
+HF60 hardware proof in Santalune Forest showed exact 3-tile movement on each
+axis, zero cross-axis drift, exact return, stable zone 286, and successful
+Kalos DB resolution to Tall grass.
+
+HF61 removes the temporary blind XY left/right pattern from the main Hunts
+worker. Pokémon Y now feeds live zone/grid into the existing DynamicTerrain
+corridor/reposition planner already used by the ORAS world-authority system.
+
+Every movement pulse is authorized against pokemon_y_grass_runtime.sqlite.
+The entire worst-case fluid movement window must remain classified encounter
+terrain. Any no-encounter pulse is followed by a live zone/X/Z reread and must
+still resolve to encounter terrain in the same zone.
+
+After a non-target battle, HF57 repeated RUN touches are deliberately unchanged.
+Stable DllField and successful world-containment revalidation are mandatory
+before movement resumes.
+
+Pokémon X is not enabled for this authority until its own world data is
+independently certified. ORAS paths and databases are unchanged.

@@ -1,0 +1,37 @@
+HF82 — LOCKED SHINY FRAME COUNTDOWN
+====================================
+
+Purpose
+-------
+Make NEXT SHINY behave as a real passive countdown instead of recalculating a
+new nearest shiny target on every 2-second refresh.
+
+Behavior
+--------
+1. Acquire the nearest future raw Gen VI shiny PID output from the live MT RAM
+   snapshot.
+2. Lock that exact PID as the current tracker target.
+3. On every refresh, locate that same PID in the future live MT stream.
+4. While it remains ahead, NEXT SHINY can only decrease.
+5. If that PID is no longer ahead, its frame was consumed/skipped (or the game
+   reset to a different MT stream). Immediately acquire the next future shiny
+   PID and continue counting down.
+
+This intentionally does NOT claim the shiny frame will become an encounter.
+Different hunt methods consume MT outputs differently. The tracker remains
+purely informational and never changes hunt input, timing, or RNG state.
+
+Examples
+--------
+NEXT SHINY: +1,802
+NEXT SHINY: +1,411
+NEXT SHINY: +986
+...
+previous frame passes without becoming a shiny encounter
+...
+NEXT SHINY: +2,347   (new target acquired)
+
+Firmware
+--------
+No new boot.firm is required. HF82 retains the existing HF78+ CPAD-capable
+firmware package.

@@ -1,0 +1,50 @@
+Pokebot3DS-CFW HF89 - DexNav Overworld Target Probe
+====================================================
+
+Purpose
+-------
+Stop guessing timed Circle Pad movement for the Route 101 tutorial Poochyena.
+This probe maps the actual overworld DexNav target entity/coordinates from RAM.
+
+The probe is read-only:
+- no RAM writes
+- no controller packets
+- no automatic movement
+
+Run
+---
+Run:
+  tools\DEXNAV_OVERWORLD_TARGET_PROBE.bat
+
+Do not run the main Pokebot at the same time.
+
+Stages
+------
+1. Load/reset to the save before the tutorial Poochyena is visible.
+   Stand still and take the baseline snapshot.
+2. Advance the tutorial on the 3DS until Poochyena is visible/rustling.
+   Do not approach it yet. Take the target-visible snapshot.
+3. Start the live watch and use the PHYSICAL Circle Pad to sneak into Poochyena.
+   The probe automatically detects battle RAM and takes a final snapshot.
+
+Evidence captured
+-----------------
+- 1 MiB ORAS field-object/DexNav arena: 0x08D00000-0x08DFFFFF
+- field globals: 0x08C60000-0x08C8FFFF
+- player world coordinates and battle state
+- top/bottom screenshots at major stages
+- baseline -> target-visible changed-block ranking
+- species #261 hints
+- plausible world-coordinate pairs
+- candidate field/entity blocks sampled during the physical sneak
+- final battle/no-battle snapshot
+
+Output
+------
+A file named similar to:
+  DexNav_Overworld_Target_Probe_YYYYMMDD_HHMMSS.zip
+is created under the Pokebot3DS-CFW AppData profile folder.
+
+Upload that ZIP for analysis. The goal is to identify a stable target object and
+replace timed CPAD movement with RAM-directed steering:
+  player XY -> target XY -> CPAD vector -> continuous correction -> battle.

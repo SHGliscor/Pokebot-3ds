@@ -1,0 +1,17 @@
+Pokebot3DS-CFW v0p43DW — Horde Honey Bag Touch Fix
+==================================================
+
+Hardware result from v0p43DV:
+- (170,230) touched the blue Trainer Card shortcut.
+
+Correction:
+- Yellow Bag shortcut candidate is now (133,230), one icon left.
+
+Safety remains unchanged:
+- Honey must be first active Items-pocket entry.
+- Live inventory must prove item ID 94 and positive quantity.
+- After the touch, the live Bag/Items controller must be found.
+- Selected item must RAM-prove as Honey before Use is allowed.
+- A bad touch therefore safety-holds instead of using a random item.
+
+Sweet Scent path is unchanged.

@@ -1,0 +1,17 @@
+HF52 — X/Y world-data source extractor
+
+Purpose
+- Prepare the exact game-file inputs needed to build the X/Y world/location DB with the same style of source-data pipeline used for ORAS.
+
+Confirmed X/Y pk3DS GARC layout
+- a/0/1/2 = encounter / zone data
+- a/0/4/1 = mapGR
+- a/0/4/2 = mapMatrix
+
+Usage
+1. Run RUN_EXTRACT_XY_WORLD_FILES.bat.
+2. Point it at the existing Y base.zip.
+3. Optionally point it at Y update.zip; update copies override base where present.
+4. Upload the generated XY_WORLD_SOURCE_FILES.zip.
+
+The tool is read-only and does not modify the game archives.

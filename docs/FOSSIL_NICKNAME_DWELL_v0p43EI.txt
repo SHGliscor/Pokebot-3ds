@@ -1,0 +1,30 @@
+Pokebot3DS-CFW v0p43EI — Fossil nickname dwell authority fix
+
+Observed hardware hold
+----------------------
+A repeated 5-fossil batch reached fossil #5, validated the new non-shiny Tirtouga with 3 identical PK6 reads, advanced received-Pokemon text, and entered the proven NICKNAME_TEXT state. The dwell gate timed out even though its final authoritative fields were still correct.
+
+Root cause
+----------
+The dwell used the SHA fingerprint of a small text-memory window as part of its stability signature. That fingerprint was intended only as a change detector and is not language/content authority. Harmless text-window changes could therefore restart the dwell timer.
+
+EI behavior
+-----------
+The dwell timer now depends only on:
+- state
+- ui_a / ui_b
+- menu_flag
+- return_flag
+- owner4
+- owner5c
+- owner174
+
+text_fingerprint remains in snapshots/logs but does not grant or revoke input authority. Any real change in the authoritative fields still restarts the dwell. Read failures or leaving the wanted state also reset it.
+
+Diagnostics
+-----------
+FOSSIL OR STATE DWELL RESET identifies why the timer restarted and lists changed authoritative fields. FOSSIL OR STATE DWELL READY reports how many text-fingerprint changes were ignored during the successful dwell.
+
+Safety
+------
+No input is sent merely because the fingerprint changes. The same RAM state must remain authoritative for the full dwell, and all existing shiny/stable-PK6 safety gates remain before post-gift input.

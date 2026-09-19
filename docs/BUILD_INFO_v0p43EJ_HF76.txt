@@ -1,0 +1,13 @@
+Pokebot3DS-CFW v0p43EJ HF76
+
+DexNav Tutorial Poochyena 14-A correction
+Base: HF75 Profile Selector Restore + DexNav Tutorial Poochyena
+
+Hardware evidence: support log Pokebot3DS-CFW_support_20260912_003401.zip showed the controller completed all 12 configured A presses and entered the manual sneak window while two tutorial text advances still remained. The successful encounter then occurred after those two manual A presses.
+
+Changes:
+- DexNav tutorial dialogue budget corrected from 12 to 14 acknowledged A presses.
+- Existing Route 101 world-position guards retained.
+- Existing Lv.5 + elemental Fang PK6 identity gate retained.
+- Manual physical Circle Pad sneak retained; no guessed D-pad input added.
+- HF75 Static/Gift/Fishing profile-selector restoration retained.

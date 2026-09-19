@@ -1,0 +1,10 @@
+Pokebot3DS-CFW v0p43EH
+Wild Run Bridge Recovery + Field Reacquire
+
+Built from v0p43EG.
+Narrow reliability patch from four Route 102 hardware Safety HOLD support bundles.
+- bounded read-only recovery after exhausted UDP CMD_READ timeout
+- PING + GAME_INFO process identity revalidation before retrying RAM READ
+- post-escape field reacquisition extended from 4.0 s to 8.0 s for normal grass Wild modes only
+- authority predicates, shiny authority, movement and Run input are unchanged
+No game RAM writes.

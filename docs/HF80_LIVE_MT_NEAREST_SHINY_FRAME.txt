@@ -1,0 +1,23 @@
+HF80 — PASSIVE LIVE MT NEAREST SHINY FRAME
+
+Fixes HF79 RNG tracker after game reset.
+
+Root causes in HF79:
+- ORAS/XY MT index is a 16-bit field. HF79 read it as a 32-bit integer.
+- HF79 treated PokeReader's initial-seed storage as native game RAM. PokeReader
+  creates that persisted value with a hook; stock Pokebot does not.
+
+HF80 no longer needs the initial seed or a cached frame alignment.
+It reads the live 624-word MT table directly through the read-only RAM bridge,
+using <=0x200-byte chunks, with the 16-bit MT index read before and after the
+snapshot. If the index moved during capture, the sample is discarded/retried.
+
+UI:
+- NEXT SHINY +N MT frames
+- MT Index
+- Snapshot LIVE
+- TSV
+- predicted Shiny PID
+- shiny XOR
+
+This is display-only. Hunt timing/input logic never reads the tracker result.

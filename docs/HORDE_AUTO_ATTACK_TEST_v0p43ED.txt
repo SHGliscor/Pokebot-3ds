@@ -1,0 +1,31 @@
+Pokebot3DS-CFW v0p43ED — Horde Auto-Attack Hardware Test
+
+Purpose
+-------
+Validate the production RAM-based Horde move selector on an ordinary non-shiny Horde.
+
+Recommended first test
+----------------------
+1. Put a status/field move such as Sweet Scent in move slot 1.
+2. Put one ordinary single-target damaging move with PP in move slot 2, 3, or 4.
+3. Select Horde mode (Sweet Scent or Honey trigger is fine).
+4. Tick: Test Auto-Attack on next non-shiny Horde.
+5. Start the hunt.
+
+Expected behavior
+-----------------
+- Opponent RAM proves a five-Pokemon Horde and zero shinies.
+- Live lead PK6 is refreshed.
+- All four move IDs and current PP are evaluated.
+- Exactly one authorized damaging move is chosen from slots 1-4.
+- FIGHT is opened, that move slot is touched, and the Horde target selector is proven.
+- One fixed non-shiny target is touched and its exact target mask is proven.
+- One attack resolves (KO or survived/missed are both acceptable test outcomes).
+- The normal Horde escape path resumes.
+
+Safety
+------
+- Any actual shiny Horde refuses all test attack input.
+- Zero game RAM writes.
+- No spread/random/all-foe move is authorized in this protected-target policy.
+- The one-shot arm is consumed before controller input.

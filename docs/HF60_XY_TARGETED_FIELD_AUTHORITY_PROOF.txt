@@ -1,0 +1,24 @@
+HF60 XY Targeted Field Authority Proof
+========================================
+
+HF59 Route 3 hardware capture produced a high-value structural result:
+
+  X primary candidate = 0x08C670BC
+  Route 3 zone 260    = 0x08C67190
+  0x08C67190 - 0x08C670BC = 0xD4
+
+The X value moved +72.0 during the manual RIGHT step and returned exactly to
+baseline. 72.0 is exactly four 18-unit Gen 6 map tiles.
+
+That +0xD4 zone relationship exactly matches the already hardware-proven ORAS
+field-position block layout. Therefore HF60 directly probes:
+
+  X    0x08C670BC
+  Z    0x08C670C4  (X + 8)
+  Zone 0x08C67190  (X + 0xD4)
+
+It also observes the HF59 nearby duplicate X at 0x08C671A0 and its +8 partner.
+
+No X/Y Hunts containment is enabled by this build. The test must prove both
+axes, stable expected zone, and successful Kalos world-database resolution
+before those addresses become runtime authority.

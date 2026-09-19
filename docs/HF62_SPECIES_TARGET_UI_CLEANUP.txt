@@ -1,0 +1,22 @@
+Pokebot3DS-CFW v0p43EJ HF62 — Species Target + UI Cleanup
+
+Base: HF61 XY Contained Wild Movement Unified3DS
+
+Changes
+- Look for Target now supports a multi-species allow-list (1..721) with searchable species selector.
+- Species filtering is enforced through the existing RAM-authoritative target evaluator.
+- Empty species selection means Any Species; empty overall target criteria still fails closed.
+- Real shiny handling is unchanged: the normal shiny HOLD/capture policy remains authoritative.
+- Dashboard history is consolidated into tabs:
+  * Recent encounters
+  * ORAS shinies
+  * Target shinies
+- Shiny history tables use the same sprite / IV / IV Sum / SV presentation as recent encounters.
+- New shiny history records persist IVs, nature, gender, and species IDs where available.
+- Tools page reorganized into Overview, RAM & game data, and Maintenance & support tabs.
+- Settings page reorganized into Connection & patch, Interface, Alerts & data, and Safety & statistics tabs.
+- No RAM-write behavior was added or changed.
+
+Compatibility
+- Existing recent shiny history entries created before HF62 may show dashes for IV values because old records did not persist IVs.
+- Future shiny records include the IV fields required by the new history tables.

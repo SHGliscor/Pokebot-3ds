@@ -1,0 +1,20 @@
+Honey Horde v0p43DZ hardware test
+
+Setup:
+1. Put Honey first in the Items pocket.
+2. Open Bag manually and highlight Honey.
+3. Back out to the field.
+4. Start Horde with trigger = Honey.
+
+Expected cycle:
+field -> touch yellow Bag shortcut -> RAM prove Items/page0/selector0/Honey -> A1 Select -> A2 Use -> Horde battle
+
+No scrolling and no pocket switching are authorized in Honey mode.
+
+
+v0p43DZ hardware correction:
+- DY support proved the field Bag has no battle-DllBag controller signature (raw_pattern_hits=0).
+- Honey mode no longer waits/scans for that controller before A1.
+- Preconditions remain: Honey is active Items slot 1 and manually pre-highlighted once.
+- Runtime sends A1 Select, verifies no premature consumption/battle, then A2 Use.
+- Read-only fast-state probes are logged PRE_A1, POST_A1 and POST_A2.

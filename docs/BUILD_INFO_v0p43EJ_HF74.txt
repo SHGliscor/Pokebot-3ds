@@ -1,0 +1,19 @@
+SUPERSEDED: HF76 corrected the DexNav tutorial sequence to 14 A presses after hardware support testing.
+
+Pokebot3DS-CFW v0p43EJ HF74
+
+Base: HF73 N3DSAdaptiveBattleGateGrace Unified3DS
+
+Feature: Route 101 DexNav Tutorial Poochyena UI integration test
+- Static selector entry: Poochyena - Route 101 (DexNav Tutorial)
+- Omega Ruby hardware-mapped start: zone 23, world 1917,2349
+- automated LEFT + 12 A tutorial dialogue
+- post-dialogue world proof: 1791,2349
+- physical Circle Pad sneak remains manual in this build
+- normal state=2 opponent PK6 read
+- strict tutorial gate: Poochyena #261 + level 5 + Thunder/Ice/Fire Fang
+- shiny: immediate HOLD / no further battle input
+- non-shiny: soft reset and repeat
+
+Alpha Sapphire profile is exposed but explicitly labelled parity pending.
+No game RAM writes added. Packaged boot.firm is unchanged from HF73.

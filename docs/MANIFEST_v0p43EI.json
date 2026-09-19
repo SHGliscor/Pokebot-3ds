@@ -1,0 +1,28 @@
+{
+  "build": "v0p43EI",
+  "name": "FossilNicknameDwellAuthorityFix",
+  "base": "v0p43EH_WildRunBridgeRecoveryAndFieldReacquire",
+  "hardware_evidence": "Pokebot3DS-CFW_gift_fossil_batch_20260831_203654_SAFETY_HOLD.zip",
+  "scope": [
+    "exclude text_fingerprint from fossil dwell authority only",
+    "log authoritative dwell reset reason and exact changed fields",
+    "count ignored text fingerprint changes in dwell-ready diagnostics"
+  ],
+  "unchanged_authority": [
+    "stable fossil PK6 requires 3 consecutive identical reads",
+    "shiny HOLD occurs before post-gift input",
+    "adaptive 1-5 fossil batch sizing/reset policy",
+    "received/nickname A/B choreography"
+  ],
+  "unchanged_binary_sha256": {
+    "3ds_sd/boot.firm": "33ff35b0ab3a21649ca5c9ff204ece6fefd407b98592d160fa3799155e438c6e",
+    "3ds_sd/luma/titles/000400000011C400/code.ips": "f0464aae8e3da36c02d1c6ff999f9b1aec4338086542687ddf296ceac425dc78",
+    "3ds_sd/luma/titles/000400000011C500/code.ips": "f0464aae8e3da36c02d1c6ff999f9b1aec4338086542687ddf296ceac425dc78"
+  },
+  "validation": {
+    "offline_regression": "42/42 PASS",
+    "release_integrity": "PASS",
+    "targeted_fingerprint_behavior": "PASS",
+    "targeted_authority_change_reset": "PASS"
+  }
+}

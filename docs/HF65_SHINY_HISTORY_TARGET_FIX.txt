@@ -1,0 +1,8 @@
+HF65 — Shiny History Detail + Species Target Fix
+
+- ORAS Shinies table now displays Nature and Ability alongside IVs, IV Sum and SV.
+- Future Wild/Starter/Static/Gift shiny records persist Ability ID/name as well as Nature/IVs.
+- Legacy shiny history is backfilled from durable encounter JSONL ledgers when matching PID data still exists.
+- Target Shinies now means shinies whose species matches the currently configured Species Target list; it is no longer incorrectly filtered by the current hunt method.
+- Target Shinies refreshes immediately when target configuration changes.
+- Fixed a critical Species Target matcher omission in Wild hunts: the encountered species ID is now passed into RAM-authoritative target evaluation.

@@ -1,0 +1,27 @@
+Pokebot3DS-CFW v0p43EI
+Fossil Nickname Dwell Authority Fix
+
+Built from v0p43EH.
+Narrow fossil soak-reliability patch from hardware support bundle:
+    Pokebot3DS-CFW_gift_fossil_batch_20260831_203654_SAFETY_HOLD.zip
+
+Hardware evidence:
+- adaptive 1, 2, 3 and 4 fossil batches were already proven
+- the support bundle contains a complete successful 5-fossil batch + reset
+- a later repeated 5-fossil batch generated and validated fossil #5, then held at nickname-text dwell
+- the final authoritative state remained NICKNAME_TEXT (3F/1F, menu_flag=1, owner4=0, owner5c=1, owner174=0)
+
+Change:
+- fossil dwell readiness excludes the diagnostic text_fingerprint from its stability signature
+- exact authoritative dwell-reset fields are now logged
+- text-fingerprint changes are counted as ignored diagnostics
+
+Unchanged:
+- 3-consecutive-read stable fossil PK6 authority
+- shiny HOLD order
+- adaptive 1-5 fossil batch sizing and reset policy
+- received/nickname A/B choreography
+- v0p43EH Wild Run bridge recovery and field reacquire
+- Auto Capture, Horde, Fishing, Cave, Surf and firmware/code.ips
+
+No game RAM writes.

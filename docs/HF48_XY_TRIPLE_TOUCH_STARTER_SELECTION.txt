@@ -1,0 +1,9 @@
+HF48 — XY Triple-Touch Starter Selection
+
+Change from HF47:
+- Replaces one 900 ms held starter touch with three distinct acknowledged UDP/4952 touch pulses.
+- Each touch uses the same selected-starter coordinate.
+- Each touch is fully released before the next.
+- Approximate cadence is ~0.6 s between tap starts, matching the successful global-touch probe interaction pattern.
+- A/A confirmation and authoritative XY PK6 species/checksum/TID/SID validation remain unchanged.
+- ORAS and boot.firm are unchanged.

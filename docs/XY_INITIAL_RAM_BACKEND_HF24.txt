@@ -1,0 +1,28 @@
+Pokebot3DS-CFW HF24 — Initial Pokémon X/Y RAM Backend
+
+Scope
+-----
+- Adds XY button beside ORAS in the dashboard GAME panel.
+- XY starter selector shows Random / Chespin / Fennekin / Froakie instead of ORAS starters.
+- XY starter Start remains fail-closed/disabled until starter-generation choreography is mapped on hardware.
+- Adds Pokémon X/Y GAME_INFO profiles:
+    X  0004000000055D00  process kujira-1
+    Y  0004000000055E00  process kujira-2
+- Adds initial PokeReader-referenced XY RAM profile:
+    TID/SID  0x08C79C3C
+    Party    0x08CE1CF8, stride 484, stored PK6 232 bytes
+    Wild     0x081FF744, stride 484
+    Radar    0x08D1B2B8
+- Connection Test can decode the direct XY party with the shared Gen 6 PK6 parser.
+- Adds tools/XY_RAM_PROBE.bat for a read-only, fail-closed hardware validation.
+
+References
+----------
+- zaksabeast/PokeReader reader_core/src/gen6/reader.rs for initial live RAM addresses.
+- PKHeX Gen 6 PKM structure conventions for PK6 semantics, with Pokebot's existing parser retained.
+- Hardware probe output remains the authority before automation is enabled.
+
+Test requested
+--------------
+Run tools/XY_RAM_PROBE.bat while Pokémon X or Y is loaded. Send back the generated
+xy_ram_probe_*.json. At least Party Slot 1 should match the Pokémon actually in-game.

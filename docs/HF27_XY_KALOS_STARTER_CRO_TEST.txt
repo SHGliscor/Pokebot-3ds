@@ -1,0 +1,69 @@
+Pokebot3DS-CFW v0p43EJ HF27 — XY Kalos Starter CRO Hardware Test
+=====================================================================
+
+Base
+----
+HF26 XY canonical GAME_INFO build. ORAS behaviour is preserved.
+
+Firmware
+--------
+3ds_sd\boot.firm is the GitHub-Actions-built canonical firmware based on
+official Luma3DS commit d30ac8d1c665ed2a50dc30b291f7eb6b33e9890a plus the
+current seven Pokebot firmware transforms and X/Y GAME_INFO support.
+
+SHA256:
+73ef631a856e212884336a0c4b47ed0033d591bee8fa0bdbba06feffd8923bff
+
+XY policy
+---------
+- Pokemon Y is the primary development/validation target.
+- Pokemon X uses the same XY backend; no duplicate X parity run is required.
+- X/Y do NOT require code.ips. Any global ORAS code.ips setting is ignored for
+  XY starter hunts.
+- Reset/title/Continue reuses the proven ORAS controller timings and reset
+  chord, but X/Y post-reset state is gated by live CRO modules rather than
+  ORAS fixed module addresses.
+- Verified XY Party base: 0x08CE1CF8, stride 484 bytes.
+
+Kalos starter setup for this hardware test
+-------------------------------------------
+1. Use Pokemon Y first.
+2. Save immediately before speaking to the friends at the Aquacorde Town table.
+3. The starter must NOT already have been received. Party Slot 1 must be empty.
+4. In Pokebot select GAME = XY, Hunt = Starter, then Chespin/Fennekin/Froakie.
+5. Press Start Hunt.
+
+Expected first-test sequence
+----------------------------
+soft reset
+-> shared Gen 6 title/Continue route
+-> DllField proves the save is loaded
+-> A advances the Aquacorde nickname/dialogue sequence only until
+   DllPoke3Select is proven loaded
+-> direct bottom-screen touch selects the configured Poke Ball
+-> at most two A confirmations are permitted
+-> Party Slot 1 PK6 becomes the authority
+-> expected species + checksum + TID/SID must all validate
+-> shiny/target = immediate HOLD
+-> normal miss = stop after ONE successful attempt and create support ZIP
+
+The first XY release is intentionally one-shot. It will not begin another reset
+until this choreography has passed on hardware. That is not an X/Y parity test;
+it is a single Y hardware proof of the shared XY route.
+
+State safety
+------------
+- Wrong species after selection: HOLD, no further input.
+- Non-empty preflight party: HOLD, no further input.
+- CRO identity mismatch: HOLD.
+- PK6 checksum/TID/SID mismatch: HOLD.
+- User Stop: release controller and stop.
+- Invalid/empty party slots are never treated as shiny authority.
+
+Static evidence used
+--------------------
+Y update 1.5 contains DllPoke3Select.cro. Its observed identity is:
+- file size: 0xA000
+- BSS size: 0x3C8
+- module name length: 15
+The runtime gate requires that exact module identity before starter-touch input.

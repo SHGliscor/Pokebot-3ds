@@ -1,0 +1,21 @@
+Pokebot3DS-CFW v0p43EJ HF21 - Static/Zekrom transport retry verification
+Date: 2026-09-01
+
+Reason:
+A Zekrom support trace from a different/older runtime showed _read_u32() calling
+bridge.read(BATTLE_STATE, 4) directly. A transient UDP timeout therefore escaped
+_wait_battle_active() and caused STATIC SAFETY HOLD after six successful encounters.
+
+This HF20 source already contains the intended correction:
+- _read_u32() routes the 4-byte battle-state read through _transport_read().
+- attempts=2: one initial read plus one bounded retry on TimeoutError only.
+- the same address/length is retried; no controller input is replayed.
+- non-timeout failures and a second timeout remain fail-closed.
+- _wait_battle_active(), _battle_active(), and transition resolution all use _read_u32().
+
+No encounter choreography, A-pulse budget, reset timing, PK6 parsing, shiny detection,
+or safety authority was loosened for this package.
+
+Package label advanced to HF21 only to make the verified test artifact distinct from
+the uploaded HF20 ZIP. Runtime Python logic is intentionally unchanged because HF20
+already contains the exact requested Zekrom timeout fix.

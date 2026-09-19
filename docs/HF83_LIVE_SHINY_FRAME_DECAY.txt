@@ -1,0 +1,24 @@
+Pokebot3DS-CFW v0p43EJ HF83 — Live Shiny Frame Decay
+
+Purpose
+-------
+Fix the HF82 video-observed behavior where NEXT SHINY could remain frozen even
+while encounters and the game's MT RNG continued to move.
+
+Behavior
+--------
+- A full rolling 624-word MT snapshot is used only when a shiny target is first
+  acquired or after a reset/reseed/target pass.
+- Normal refreshes use a tiny coherent live MT cursor sample:
+  16-bit index + current raw MT word + TID/SID.
+- The saved local MT clone is advanced until it matches that cursor.
+- NEXT SHINY then subtracts exactly the number of MT outputs consumed since the
+  previous update.
+- Refresh cadence is 750 ms, so the displayed number visibly decays toward zero.
+- If the locked shiny frame is consumed/skipped, the next future shiny target is
+  acquired automatically.
+- If the game is soft-reset/reseeded, the old stream cannot align and a fresh
+  target is acquired automatically.
+
+This remains passive telemetry only. No hunt timing, RNG manipulation, waits,
+inputs, or RAM writes are performed by the tracker.

@@ -1,0 +1,14 @@
+Pokebot3DS-CFW v0p43EG — Horde Auto-Attack Calibrated Move Buttons
+
+Hardware evidence:
+- v0p43EE proved the full non-shiny Horde attack pipeline using slot 2.
+- v0p43EF captured the real ORAS bottom MOVE screen.
+
+Battle move touch centers:
+- slot 1: (74,69)
+- slot 2: (246,69) [hardware-proven end-to-end]
+- slot 3: (74,133)
+- slot 4: (246,133)
+
+The one-shot non-shiny test now executes the live policy-selected safe damaging move.
+A real shiny blocks all test attack input.

@@ -1,0 +1,24 @@
+Pokebot3DS-CFW v0p43DS — Cumulative Phase / Stats / Release Cleanup
+====================================================================
+
+Base: user's hardware-tested v0p43DR One Fossil Exhaustion Fix.
+
+Changes:
+- Phase Bar is cumulative shiny probability, not denominator completion.
+- 4096 full-odds checks display ~63.22%, not 100%.
+- Exact Gen VI Shiny Charm roll probability for eligible Wild/Static hunts.
+- Starter and Gift/Fossil hunts remain full odds regardless of Charm.
+- Fishing uses actual consecutive-fishing rolls per encounter and Charm state.
+- Fishing phase probability preserves changing chain odds and chain breaks.
+- Stats page displays cumulative chance and estimated time to the conventional ~63.2% point.
+- Discord embed/Rich Presence telemetry includes cumulative phase probability.
+- Fossil stats use real reset and batch counters.
+- Fossil batch completion records actual adaptive batch size (1–5) and species.
+- Loaded stale profile labels no longer override current gift profile metadata.
+- Static reset/re-interact counters are separated.
+- App-data defaults include cumulative-probability fields.
+- Historical manifests/patch notes removed from release root.
+- Release self-test and touch calibrator launchers moved under tools\.
+
+No change to the hardware-proven v0p43DR fossil state machine/exhaustion authority.
+No game RAM writes added.

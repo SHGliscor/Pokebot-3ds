@@ -1,0 +1,20 @@
+Pokebot3DS-CFW v0p43DV — Honey Horde Bag Shortcut
+==================================================
+
+Honey Horde fast path now requires Honey as the first active item in the Items pocket.
+The start dialog reminds the user of this and read-only RAM independently verifies item ID 94.
+
+Field opening sequence:
+  overworld -> touch yellow Bag shortcut at hardware-corrected (133,230) -> prove live Items controller
+  -> prove selected item is Honey -> A -> Use A -> battle RAM authority
+
+This removes the old per-cycle X -> Bag-menu choreography.
+
+Safety:
+- direct shortcut touch is never item-use authority;
+- if the shortcut does not open the expected Items controller, the worker safety-holds;
+- no item-use A is sent unless the live controller proves Honey;
+- Honey quantity must decrease by exactly one once battle-active RAM appears;
+- no game RAM writes.
+
+Sweet Scent path is unchanged.

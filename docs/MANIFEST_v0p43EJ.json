@@ -1,0 +1,16 @@
+{
+  "build": "v0p43EJ",
+  "name": "StartupHistorySchemaGuard",
+  "base": "v0p43EI",
+  "created_utc": "2026-08-31T20:01:52.340061+00:00",
+  "fixes": [
+    "Skip aggregate *_batches.jsonl files during Last Seen reconstruction",
+    "Ignore non-scalar species records instead of crashing startup",
+    "Defensively coerce numeric history fields and IV dictionaries"
+  ],
+  "changed_files": {
+    "qt_ui/appdata_store.py": "2079e3022d5e98b5bf80c6069aa1842d2043deb6886079f69d2a478b1b019dcd",
+    "docs/BUILD_INFO_v0p43EJ.txt": "83c0786137fbe819ebdc63d0d57307a0967d383c3829bda878b53df110d22342"
+  },
+  "preserves_user_history": true
+}

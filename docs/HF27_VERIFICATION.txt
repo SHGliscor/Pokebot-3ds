@@ -1,0 +1,20 @@
+HF27 verification
+=================
+
+PASS: full Python compileall.
+PASS: X and Y GAME_INFO profiles resolve to shared family=xy.
+PASS: Kalos starter species map is Chespin 650 / Fennekin 653 / Froakie 656.
+PASS: touch encoding produces valid native 3DS touch states for all three chooser positions.
+PASS: generic CRO parser decoded the real Y 1.5 DllPoke3Select.cro from the uploaded update dump:
+      module=DllPoke3Select, file_size=0xA000, bss_size=0x3C8, module_name_size=15.
+PASS: bundled boot.firm SHA256 is 73ef631a856e212884336a0c4b47ed0033d591bee8fa0bdbba06feffd8923bff.
+
+Existing offline_regression.py result:
+- The suite stops on the same pre-existing reset_adapter UserStop assertion seen in untouched HF26.
+- HF27 and HF26 both fail at that identical assertion.
+- No new HF27 compile or XY static-smoke failure was observed.
+
+Hardware status:
+- Y GAME_INFO + Party Slot 1 PK6 already passed in HF26.
+- HF27 Kalos starter choreography is intentionally ONE ATTEMPT until a support ZIP proves the post-load sequence.
+- No separate Pokemon X parity run is required after Y passes.

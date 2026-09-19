@@ -1,0 +1,18 @@
+Pokebot3DS-CFW HF78 - DexNav Tutorial Poochyena dialogue reliability
+
+Hardware support ZIP 20260912_010241 showed HF77's 1300 ms tutorial cadence
+left three rival dialogue advances outstanding even though all 14 controller
+commands were acknowledged.
+
+HF78 changes only the tutorial text cadence:
+- LEFT trigger unchanged
+- A 1-14: 120 ms press + 1300 ms settle
+- A 15-17: 120 ms press + 1800 ms settle (cleanup tail)
+- Poochyena-visible Route 101 RAM position gate unchanged
+- automatic CPAD sneak unchanged
+- Lv.5 + elemental Fang PK6 identity gate unchanged
+- Wurmple evolution display retained
+
+The same support ZIP also reported no CAP_CPAD_PULSE capability. If that
+message appears, the 3DS is still running a pre-HF77 boot.firm. Copy the
+bundled 3ds_sd/boot.firm to SD root and reboot the console.

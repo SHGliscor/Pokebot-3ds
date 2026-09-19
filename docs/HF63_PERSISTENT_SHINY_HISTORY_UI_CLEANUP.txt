@@ -1,0 +1,12 @@
+HF63 — Persistent Shiny History + Dashboard Cleanup
+
+Base: HF62 Species Target + UI Cleanup
+
+Changes:
+- ORAS shinies history is restored from persistent AppData on launch.
+- Target shinies history is rebuilt from the same persisted history on launch.
+- Removed the redundant visible Profile panel from Dashboard for all hunt types.
+- Reserved minimum height for LOOK FOR TARGET / CAPTURE to prevent Wild Run layout squashing.
+- Removed the right-side Shiny PID/EC/TID/SID diagnostic panel from the visible Dashboard.
+  Runtime shiny authority and diagnostics remain unchanged.
+- Existing persistent shiny records continue to be used; no statistics/history reset is performed.

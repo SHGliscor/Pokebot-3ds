@@ -1,0 +1,15 @@
+Pokebot3DS-CFW v0p43EE — Horde Auto-Attack Slot-2 Hardware Validation
+
+Purpose:
+Prove the complete non-shiny Horde attack path using battle move slot 2, whose touch
+coordinate (246,69) is already hardware-proven by D17a. The dynamic selector still
+reads/evaluates all four moves; this test temporarily overrides execution to slot 2
+when slot 2 is a safe damaging move with PP.
+
+Safety:
+- refuses any real shiny Horde
+- exactly one test attack
+- no game RAM writes
+- exact COMMAND/MOVE phase proof remains required
+- exact target-selector and target-mask proof remain required
+- Safety Hold if slot 2 is not a usable single-target damaging move

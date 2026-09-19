@@ -1,0 +1,26 @@
+HF84 - Atomic MT Cursor Countdown
+
+Hardware symptom fixed
+----------------------
+HF83 could blank the RNG tracker with:
+  MT cursor moved during sample (597 -> 598)
+
+Cause
+-----
+HF83 sampled the MT index, read a state word, then sampled the index again.
+ORAS legitimately advances the main RNG between those reads, so equality was
+not a valid requirement.
+
+Fix
+---
+HF84 follows the 3DSRNGTool/PokeReader cursor layout and reads 8 contiguous
+bytes beginning at the Gen-6 MT index address.  This atomically captures:
+- 16-bit MT index
+- MT[0] raw period anchor
+
+The saved local MT clone advances until both values match.  This allows the
+NEXT SHINY distance to decay on a live game without requiring the RNG to stop.
+If the stream no longer matches (reset/reseed), the tracker reacquires a new
+future shiny target from a fresh rolling MT snapshot.
+
+This is passive telemetry only.  No RNG manipulation or game-memory writes.

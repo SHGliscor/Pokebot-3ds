@@ -1,0 +1,4 @@
+Pokebot3DS-CFW v0p43DX - Horde Honey Slot-1 Home Fast Path
+Base: v0p43DW_HordeHoneyBagTouchFix_Unified3DS
+Change: when Honey is the first active Items-pocket entry, home the remembered Bag cursor with bounded sustained UP holds instead of row-by-row scrolling.
+Safety: page/selector models must unanimously resolve to active index 0 and item ID 94 before any item-use A.

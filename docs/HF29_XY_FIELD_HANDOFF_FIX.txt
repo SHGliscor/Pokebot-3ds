@@ -1,0 +1,23 @@
+Pokebot3DS-CFW v0p43EJ HF29 — XY Field Handoff Fix
+
+Hardware symptom
+- X/Y completed reset/title/Continue and visibly entered Aquacorde.
+- No LEFT D-pad input was sent.
+
+Cause
+- HF28 required DllField present AND DllTitle/DllStartMenu absent.
+- X/Y may leave title/start CRO entries visible after overworld control returns.
+- The reset route therefore never handed off to xy_kalos.py.
+
+Fix
+- Continue must have been sent.
+- DllField must be present.
+- DllField is re-sampled after 350 ms and must still be present.
+- Lingering DllTitle/DllStartMenu are logged but non-blocking.
+- After this gate, the existing xy_kalos route sends LEFT x1 before dialogue A inputs.
+
+Safety
+- No change to ORAS.
+- No code.ips requirement for XY.
+- Starter PK6 authority remains checksum/species/TID/SID gated.
+- First XY starter attempt remains one-shot.

@@ -1,0 +1,19 @@
+Pokebot3DS-CFW v0p43EJ — Startup History Schema Guard
+
+Base: v0p43EI FossilNicknameDwellAuthorityFix Unified3DS
+
+Fix:
+- Prevent startup crash in repair_last_seen_history when the shared encounter
+  history directory contains aggregate fossil batch ledgers.
+- Fossil batch summary records intentionally store `species` as a list; Last
+  Seen repair now skips *_batches.jsonl ledgers and defensively ignores any
+  non-scalar/non-encounter species value.
+- Persisted user history is preserved; no history deletion/reset is required.
+- Numeric history fields use safe scalar coercion, and malformed IV payloads
+  fall back to an empty dict instead of aborting startup.
+
+Unchanged:
+- v0p43EI fossil nickname dwell authority fix.
+- Proven adaptive 1–5 fossil lifecycle and PK6/shiny authority.
+- v0p43EH Wild Run bridge recovery and field reacquisition.
+- Horde, Auto Capture, Fishing, Static/Gift hunt logic, firmware and code.ips.

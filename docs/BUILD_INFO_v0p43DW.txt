@@ -1,0 +1,4 @@
+Pokebot3DS-CFW v0p43DW - Horde Honey Bag Touch Fix
+Base: v0p43DV_HordeHoneyBagShortcut_Unified3DS
+Hardware correction: yellow Bag shortcut moved from (170,230) to (133,230).
+No changes to Honey slot-1 RAM authority, item ID verification, Sweet Scent, or Horde battle logic.

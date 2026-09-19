@@ -1,0 +1,23 @@
+Pokebot3DS-CFW v0p43EJ HF22
+Static Communication Error Recovery
+
+Evidence:
+- Zekrom soak run reached 12 valid encounters.
+- HF21's transient battle-state UDP retry prevented the previous raw TimeoutError failure.
+- Reset #12 reached ORAS Communication Error with RAM route:
+  PSS=true, Field=false, Start=false, Title=false.
+
+Change:
+- Only the Static saved-field reset adapter opts into code.ips communication-error recovery.
+- Exactly one A is authorised only for the exact unambiguous RAM signature above.
+- After dismissal, the normal route must reach and validate the caller's exact saved field.
+- A persistent Communication Error, mixed/ambiguous route state, invalid field, invalid bag,
+  transport failure, or other authority failure still Safety HOLDs.
+- No encounter input or reset chord is replayed by this recovery.
+
+Unchanged:
+- Shiny/PK6 authority
+- Zekrom interaction choreography
+- Static battle-state transport retry from HF21
+- Starter, Gift and Fossil reset behaviour
+- Wild/Horde/Capture logic

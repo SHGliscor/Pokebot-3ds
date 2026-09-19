@@ -1,0 +1,27 @@
+Pokebot3DS-CFW — HF100 Professor Oak Pokémon Tracker
+
+Base: HF99 ORAS Professor Oak Challenge
+
+What changed
+- Added an individual Pokémon-level tracker alongside the researched grouped guide.
+- Alpha Sapphire and Omega Ruby use separate version-specific Pokémon lists.
+- Each version resolves to 410 tracked Pokémon for a single-game Oak route.
+- Added starter-family selectors for Hoenn, Johto, Unova and Sinnoh.
+- Added Route 111 fossil selector (Lileep line or Anorith line).
+- Explicitly expands the Eevee + eight evolutions shorthand so all nine entries are trackable.
+- Added search and Incomplete only filtering to the Pokémon view.
+- Added RESET POKÉMON and COPY MISSING controls.
+- Existing HF98/HF99 grouped checklist progress is migrated to individual Pokémon where the source task names identify the species.
+- Grouped GUIDE / GATES view remains available as the source-route reference.
+- Progress is stored separately for Alpha Sapphire and Omega Ruby.
+- No hunt automation is changed by the Oak tracker.
+
+Research basis
+- Altissimo1 Alpha Sapphire checklist: https://altissimo1.github.io/Main-Series/ORAS/Pokedex/alphasapphire-only.html
+- Professor Oak Gen 6 spreadsheet guide: https://docs.google.com/spreadsheets/d/1Wu2JQ_IAH0kffegBDU6QgOpANysinFxzX-YhkxamhE8/edit?usp=sharing
+- Community announcement confirms the Gen 6 spreadsheet contains separate Omega Ruby and Alpha Sapphire sheets.
+
+Important
+- Oak challenge rules vary. This tracker is a manual progress aid, not proof that the game save contains a qualifying caught/evolved Pokémon.
+- Starter and fossil selectors represent the single-game route choices; changing a selector changes which individual entries are displayed as required.
+- The 410 count follows the researched single-game route target, not a National Dex total.

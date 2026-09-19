@@ -1,0 +1,16 @@
+HF23 STATIC POST-RESET VALIDATOR RETRY
+---------------------------------------
+- Based on HF22; HF21 battle-state transport retry and HF22 static
+  Communication Error recovery remain unchanged.
+- Zekrom support trace 20260901_191315 proved reset #9 had already returned to
+  exact saved-field/bag authority before one final validator RAM read timed out.
+- The final Static saved-field validator now retries exactly once on
+  TimeoutError only, after an 80 ms delay.
+- The retry is read-only. No A press, encounter input, reset chord, Continue
+  input, or Communication Error dismissal is replayed.
+- UserStop still propagates normally.
+- Any non-timeout exception, or a second TimeoutError, still Safety HOLDs.
+- Gifts, starters, fossils, Wild/Horde and capture paths are unchanged.
+
+
+Safety invariant: retry the same read-only authority check only; never replay gameplay input.

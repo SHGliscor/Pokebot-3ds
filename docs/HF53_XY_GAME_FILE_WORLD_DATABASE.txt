@@ -1,0 +1,31 @@
+HF53 — Pokémon X/Y Game-File World Database
+
+This build replaces the temporary RAM-walk idea with the same source-first methodology used for the ORAS world database.
+
+Authoritative X/Y decrypted RomFS sources:
+  a/0/1/2  X/Y encounter/zone archive
+  a/0/4/1  X/Y mapGR / field-region archive
+  a/0/4/2  X/Y mapMatrix archive
+
+These paths are the X/Y equivalents of the shifted ORAS Gen 6 archives used by pk3DS.
+
+Compiled output:
+  pokebot/wild/world/pokemon_xy_world_runtime.sqlite
+
+Compiled from the user's Y game files:
+  360 ZoneData records
+  81 distinct Kalos parent-map locations
+  227 map matrices
+  4,586 matrix cells
+  270 matrix transition records
+  1,030 mapGR field regions
+
+Validation:
+  - every ZoneData parent_map resolves to a known X/Y location name
+  - every ZoneData map_matrix_id resolves to a compiled map matrix
+  - every non-empty matrix region reference resolves to a mapGR region
+  - Aquacorde Town parent_map 10 maps to zone IDs 8,9,10,11
+
+The database is now suitable as the static game-file authority for X/Y location/map metadata. A separate runtime step is still required to identify the live X/Y zone-id RAM address before Discord can dynamically follow the player everywhere. Starter mode remains correctly identified as Aquacorde Town.
+
+No ORAS files or behavior were changed.

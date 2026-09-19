@@ -1,0 +1,36 @@
+{
+  "build": "v0p43EJ-HF1",
+  "name": "StaticRamTimeout_StartupFast_ThreadAudit",
+  "base": "v0p43EJ StartupHistorySchemaGuard",
+  "created_utc": "2026-08-31T22:16:01.710611+00:00",
+  "fixes": [
+    "Retry one lost idempotent Static u32 RAM read before SAFETY HOLD",
+    "Do not parse full Stats encounter history during MainWindow construction",
+    "Stream and cache Stats ledger refreshes",
+    "Run legacy sibling-build migration discovery only until migration_v1.json exists",
+    "Defer automatic network/background startup work until after first UI paint",
+    "Reduce Idle Party Viewer short-lived QThread/RAM refresh cadence to 1 second",
+    "Lazy-import heavy Wild/Static/Gift hunt workers",
+    "Record MainWindow construction elapsed time for future support diagnosis"
+  ],
+  "thread_audit": {
+    "deferred_qthread_shutdown_preserved": true,
+    "blocking_qthread_wait_added": false,
+    "qthread_terminate_added": false,
+    "idle_party_refresh_interval_ms": 1000
+  },
+  "changed_files": {
+    "qt_ui/static_worker.py": "7124d6ce01fcdfaaea2b572fcd3dfafd14e200530adfb3f23f177adc5fbf60fe",
+    "qt_ui/stats_page.py": "2f9ab89a79eb7dd85fe72487881996e3f40bef27a4ab4c21af27567bffcd2590",
+    "qt_ui/appdata_store.py": "092349e29ad496e4f1e1336c7e34c2758faf022f3947e370998000af286bd5bc",
+    "qt_ui/main_window.py": "d7bacf7eac040d876ff420ec0e2f56477f8ad1e77f6931809cb91eb587f7fb69",
+    "qt_ui/app.py": "faa2d718006f09353b0357f97fd3fc349067381698815def39f9cf7e24de9a60",
+    "tools/offline_regression.py": "986177b3de5aebb8ff7bbcd18e5077e78a9ec3fe5f7783a526550a9ded356961",
+    "RUN_BOT.bat": "0fa6d8a1b16cc8ab2b5ab17a824ea1dd784c9ad76bf5cf448ee675e337d7faae",
+    "README.txt": "99b49cf6061bfc4d13c65889d506fbb0fba529cf34a1464d6d1c219698b06dcd",
+    "docs/BUILD_INFO.txt": "e8f47e5e64419263b4ed6f4410d133c3e5f5c620122cf4f4aa2038215087ee3c",
+    "docs/STARTUP_STATIC_HOTFIX_v0p43EJ.txt": "617da9e3c448c51f67f70175a6d587feec90326409ee532937d0631a35573b46"
+  },
+  "preserves_user_history": true,
+  "static_controller_write_retry": false
+}

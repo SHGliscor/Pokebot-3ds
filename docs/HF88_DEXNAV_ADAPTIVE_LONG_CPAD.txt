@@ -1,0 +1,13 @@
+Pokebot3DS-CFW HF88 — DexNav adaptive long CPAD
+
+Hardware evidence from the HF87 safety hold:
+- visible anchor: 1791.0, 2349.0
+- after 3000 ms at (-0.40,+0.08): 1777.0133, 2349.0
+- after another 1400 ms: 1770.2611, 2349.0
+- manual battle checkpoint: 1710.6530, 2334.0061
+
+Conclusions:
+1. Short total hold time was the primary distance problem. X=-0.40 moved about 4.7 world units/sec, requiring roughly 17 seconds to cover the proven ~80-unit approach.
+2. Y=+0.08 was inside ORAS' effective Circle Pad dead-zone; world Y never changed.
+
+HF88 therefore chains up to four 5000-ms CPAD holds (firmware command-13 maximum), uses +0.16 UP initially, tapers the UP component from RAM position, and keeps gaps between long holds short. Battle RAM remains the terminal authority.

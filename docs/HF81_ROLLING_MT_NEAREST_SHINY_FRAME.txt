@@ -1,0 +1,16 @@
+HF81 — Rolling live MT nearest-shiny frame
+
+Fixes HF80 staying blank while the ORAS main RNG advances during the five bounded RAM reads.
+
+Hardware symptom:
+  MT is advancing during snapshot; retrying (index 49 -> 58)
+
+HF81 does not require the RNG to stop. It reads the full MT table, records the later 16-bit index, then re-reads exactly the MT slots that advanced during acquisition. Those repaired slots are stable until the next 624-frame lap, yielding a coherent snapshot at the recorded later index.
+
+Properties:
+- read-only RAM only
+- no RNG manipulation
+- no timing changes
+- no new boot.firm required over HF78+ CPAD firmware
+- no PokeReader seed hook required
+- keeps existing 0x200 maximum bridge READ contract
