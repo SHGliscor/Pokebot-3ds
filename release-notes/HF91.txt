@@ -1,0 +1,6 @@
+HF91 DexNav Adaptive-Gain RAM Steering
+- Uses HF90 support evidence to correct underpowered CPAD steering.
+- Raises partial horizontal gain and materially raises the up component.
+- Adds per-axis RAM feedback: if Z does not move, UP strength escalates automatically.
+- Keeps the HF89-discovered live DexNav target object as navigation authority.
+- Retains persistent RNG telemetry and the existing CPAD-capable firmware protocol.

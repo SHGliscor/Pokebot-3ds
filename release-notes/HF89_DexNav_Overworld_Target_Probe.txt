@@ -1,0 +1,13 @@
+HF89 - DexNav Overworld Target Probe
+
+Probe-only build based on HF88. Main hunt behaviour is unchanged.
+
+Added:
+- tools/DEXNAV_OVERWORLD_TARGET_PROBE.bat
+- tools/dexnav_overworld_target_probe.py
+- docs/HF89_DEXNAV_OVERWORLD_TARGET_PROBE.txt
+
+The new mapper captures broad ORAS field RAM before target appearance, while the
+Poochyena is visible, during a physical Circle Pad sneak, and at battle entry.
+It ranks candidate overworld object blocks using stage deltas, species #261,
+world-coordinate pairs and live stability. No RAM writes or controller input.
