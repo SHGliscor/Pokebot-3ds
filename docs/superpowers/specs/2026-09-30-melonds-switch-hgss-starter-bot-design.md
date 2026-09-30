@@ -4,30 +4,37 @@ Date: 2026-09-30
 
 ## 1. Purpose
 
-Build a safe, RAM-driven shiny-hunting bot for Pokemon HeartGold and SoulSilver running in `trulymust/melonDS-switch-upscale` on Nintendo Switch. The PC-side bot communicates over USB using Koi's USB botbase 3.33.
+Build a safe, RAM-driven shiny-hunting bot for Pokemon HeartGold and SoulSilver running in `trulymust/melonDS-switch-upscale` on Nintendo Switch. The PC-side bot communicates over USB using Koi USB botbase 3.33.
 
 The first retained feature is HG/SS starter hunting. The bot must inspect all three starters in RAM, stop on any shiny, and only soft-reset when all three starter records are proven valid and non-shiny.
 
-This design deliberately establishes reusable transport, emulator-memory, controller, Pokemon-data, diagnostics, and game-profile layers so later hunts and later DS games can reuse the same foundation.
+The architecture must be reusable for later HG/SS hunts and, later, D/P/Pt and Gen 5 without rebuilding the USB, emulator-memory, controller, diagnostics, or Pokemon parsing layers.
 
-## 2. Primary constraints
+## 2. Constraints
 
 - Emulator: `trulymust/melonDS-switch-upscale`.
 - Switch transport: Koi USB botbase 3.33 over USB.
 - Bot implementation: Python on the PC.
-- No capture card dependency.
-- No Lua script loaded into melonDS.
-- RAM access from the bot is read-only by design. The bot transport will not expose RAM-write methods.
-- Controller input is allowed and is the only way the bot changes game state.
+- No capture-card dependency.
+- No Lua script inside melonDS.
+- RAM access is read-only from the bot's public API.
+- Controller input is the only way the bot changes game state.
 - No Qt UI in v0.1.
 - Safety takes priority over reset speed.
-- Unknown or contradictory game/Pokemon state must fail closed.
+- Unknown or contradictory game/Pokemon state fails closed.
 
-## 3. External technical references
+## 3. Technical references
 
 ### melonDS Switch fork
 
-`trulymust/melonDS-switch-upscale` identifies itself as melonDS 0.9.2. On ARM64 the JIT is enabled by default. In the Switch JIT memory implementation, melonDS allocates and maps a backing memory block and assigns `NDS::MainRAM` to the MainRAM portion of that block.
+`trulymust/melonDS-switch-upscale` identifies itself as melonDS 0.9.2. On ARM64 its JIT is enabled by default. In the Switch JIT path, melonDS allocates a backing memory block with `aligned_alloc()`, creates a mapped alias with `svcMapProcessCodeMemory`, and sets `NDS::MainRAM` to the MainRAM portion of that mapped block.
+
+This gives us two useful views of the same emulated backing storage:
+
+1. the heap-backed allocation created by melonDS;
+2. the mapped alias used by JIT/fastmem.
+
+For v0.1, heap-backed discovery is preferred because Koi exposes heap-relative reads directly. We do not need the exact JIT alias if we can reliably identify and read the corresponding backing storage.
 
 Relevant source files:
 
@@ -38,38 +45,39 @@ Relevant source files:
 
 ### Koi USB botbase
 
-The Koi command set exposes the primitives required by the PC bot:
+Required primitives include:
 
-- `peekAbsolute`
-- `peekAbsoluteMulti`
-- `peekMain`
-- pointer reads
-- `getHeapBase`
-- `getMainNsoBase`
-- `getBuildID`
-- `getTitleID`
-- controller `press`, `release`, `click`, `clickSeq`
+- `peek` / `peekMulti` for heap-relative reads;
+- `peekAbsolute` / `peekAbsoluteMulti`;
+- `peekMain`;
+- pointer reads;
+- `getHeapBase`;
+- `getMainNsoBase`;
+- `getBuildID`;
+- `getTitleID`;
+- controller `press`, `release`, `click`, and `clickSeq`.
 
-The bot will wrap these commands; game and hunt code must never emit Koi protocol strings directly.
+Game and hunt code must never emit Koi protocol strings directly.
 
-### Pokebot NDS reference logic
+### Pokebot NDS
 
-`wyanido/pokebot-nds` supplies proven HG/SS game-side research that should be ported rather than rediscovered:
+`wyanido/pokebot-nds` supplies the HG/SS game-side research to port:
 
-- game/language identification around DS addresses `0x023FFE08` and `0x023FFE0F`
-- HG/SS regional offsets
-- dynamic HG/SS anchor at `0x021D4158 + regional_offset`
-- starter data at `anchor + 0x1BC00`
-- Gen IV Pokemon record parsing/checksum logic
-- Gen IV shiny test
+- game/language markers at DS `0x023FFE08` and `0x023FFE0F`;
+- HG/SS regional offsets;
+- dynamic anchor at `0x021D4158 + regional_offset`;
+- starter data at `anchor + 0x1BC00`;
+- 236-byte Gen IV party-record spacing;
+- Gen IV checksum/parsing logic;
+- Gen IV shiny test.
 
-## 4. High-level architecture
+## 4. Architecture
 
 ```text
 HGSS starter hunt
         |
         v
-HGSS game profile / state machine
+HGSS profile / state machine
         |
         +-------------------+
         |                   |
@@ -77,8 +85,7 @@ HGSS game profile / state machine
 NDSMemory              DSController
         |                   |
         v                   v
-melonDS MainRAM       InputGate
-resolver                   |
+MainRAM resolver        InputGate
         |                   |
         +---------+---------+
                   |
@@ -95,49 +102,39 @@ resolver                   |
             HG / SS ROM
 ```
 
-Dependency direction is one-way. Higher layers may depend on lower layers, but lower layers do not know about hunts.
+Higher layers depend on lower layers only. Hunt code never knows Switch addresses or Koi command syntax.
 
-## 5. Repository/module layout
+## 5. Module layout
 
 ```text
 pokebot-melonds/
-|
 +-- run_probe.py
 +-- run_hgss_starters.py
-|
 +-- pokebot/
 |   +-- transport/
 |   |   +-- koi_usb.py
 |   |   +-- protocol.py
-|   |
 |   +-- emulator/
 |   |   +-- melonds.py
 |   |   +-- mainram_resolver.py
 |   |   +-- nds_memory.py
-|   |
 |   +-- input/
 |   |   +-- ds_controller.py
 |   |   +-- input_gate.py
-|   |
 |   +-- pokemon/
 |   |   +-- gen4_crypto.py
 |   |   +-- pk4.py
 |   |   +-- shiny.py
-|   |
-|   +-- games/
-|   |   +-- hgss/
-|   |       +-- profile.py
-|   |       +-- pointers.py
-|   |       +-- states.py
-|   |       +-- starters.py
-|   |
+|   +-- games/hgss/
+|   |   +-- profile.py
+|   |   +-- pointers.py
+|   |   +-- states.py
+|   |   +-- starters.py
 |   +-- hunts/
 |   |   +-- hgss_starters.py
-|   |
 |   +-- diagnostics/
 |       +-- logger.py
 |       +-- dumps.py
-|
 +-- probes/
 |   +-- 00_usb_probe.py
 |   +-- 01_input_probe.py
@@ -146,46 +143,42 @@ pokebot-melonds/
 |   +-- 04_hgss_anchor_probe.py
 |   +-- 05_starter_watch_probe.py
 |   +-- 06_starter_reset_probe.py
-|
 +-- tests/
 |   +-- test_gen4_crypto.py
 |   +-- test_pk4.py
 |   +-- test_hgss_offsets.py
 |   +-- test_mainram_translation.py
 |   +-- fixtures/
-|
-+-- docs/
-    +-- superpowers/
++-- docs/superpowers/
 ```
 
-Probes are permanent diagnostics, not throwaway scripts.
+The probe programs are permanent diagnostics, not throwaway scripts.
 
 ## 6. Koi USB transport
 
-`KoiUSBTransport` owns the USB connection and Koi command protocol.
+`KoiUSBTransport` owns USB and Koi protocol details.
 
 Responsibilities:
 
-- connect/disconnect
-- send a command and parse a reply
-- bounded timeout and retry policy
-- read absolute process memory
-- read NSO-relative memory when required
-- query title ID, build ID, heap base, NSO base, and botbase version
-- send controller press/release/click operations
-- cancel outstanding input sequences when entering a hold
+- connect/disconnect;
+- command/reply parsing;
+- bounded timeouts and retries;
+- heap-relative and absolute reads;
+- title/build/heap/NSO metadata;
+- controller press/release/click operations;
+- cancellation/release of outstanding inputs on hold.
 
-The public RAM interface is read-only. No `poke`, pointer write, freeze, or equivalent API is exposed above the transport implementation.
+The public RAM interface is read-only. No `poke`, freeze, or RAM-write operation is exposed to hunt code.
 
-## 7. melonDS MainRAM resolution
+## 7. NDS MainRAM translation
 
-HG/SS DS addresses cannot be passed directly to Koi. Koi reads the Switch process's virtual address space; HG/SS addresses refer to the emulated NDS address space inside melonDS.
+HG/SS addresses refer to emulated NDS memory, not Switch process addresses.
 
-For normal NDS main RAM, logical translation is:
+For ordinary DS main RAM:
 
 ```text
 offset = ds_address - 0x02000000
-host_address = mainram_host + offset
+host_backing_address = mainram_backing_base + offset
 ```
 
 `NDSMemory` exposes DS addresses only:
@@ -199,32 +192,30 @@ class NDSMemory:
     def read(self, ds_addr: int, size: int) -> bytes: ...
 ```
 
-Hunt/game code must never receive or calculate Switch host addresses.
+### 7.1 Resolver tiers
 
-### 7.1 Resolver strategy
+#### Tier A: heap-backed signature discovery — preferred
 
-Use a three-tier strategy.
+Search the melonDS heap allocation space first, using Koi heap-relative reads. The Switch JIT path creates the backing block with `aligned_alloc()`, so the emulated MainRAM storage originates from the heap even though melonDS later maps a JIT alias.
 
-#### Tier A: runtime memory/signature discovery
+A candidate base is accepted only when several independent DS offsets validate simultaneously:
 
-Preferred first approach. Locate a candidate host memory window and validate it against multiple HG/SS values at known DS offsets.
+- recognized HG/SS game code at DS `0x023FFE08`;
+- recognized language at DS `0x023FFE0F`;
+- plausible value at `0x021D4158 + regional_offset`;
+- valid HG/SS starter structures at the expected derived address when the starter screen is open.
 
-A candidate is not accepted merely because its allocation size looks correct. Validation requires independent evidence, including:
+The probe should scan coarsely for the near-end-of-4-MB game/language signature first, then derive a candidate base and perform the remaining validations. It must not repeatedly dump the entire heap.
 
-- plausible HG/SS game code at DS `0x023FFE08`
-- recognized language byte at DS `0x023FFE0F`
-- a plausible HG/SS dynamic anchor at DS `0x021D4158 + language_offset`
-- starter structures that validate when the starter screen is open
+#### Tier B: stable NSO-relative pointer or host pointer chain
 
-#### Tier B: stable NSO-relative pointer
+While probing Tier A, determine whether the specific melonDS build exposes a stable module-relative pointer or pointer chain to `NDS::MainRAM` or its backing allocation.
 
-During probing, determine whether the compiled melonDS fork exposes a stable module-relative pointer or pointer chain to `NDS::MainRAM`.
+If one remains stable across cold launches of the same build, use it as a fast resolver but continue validating the HG/SS signatures before accepting it.
 
-If stable across launches of the same build, use this as the fast resolver while retaining signature validation.
+#### Tier C: tiny melonDS bridge marker — fallback
 
-#### Tier C: tiny melonDS bridge marker
-
-If A/B are unreliable across launches/builds, maintain a minimally modified build of this exact melonDS fork which exposes a stable marker structure, for example:
+If A/B are unreliable, maintain a minimally modified build of this exact fork exposing a stable read-only marker such as:
 
 ```text
 POKEBOT_NDS_BRIDGE_V1
@@ -233,28 +224,26 @@ mainram_size
 console_type
 ```
 
-The Python-side `NDSMemory` API remains unchanged if this fallback is adopted.
+The Python-side `NDSMemory` API does not change if this fallback is adopted.
 
 ### 7.2 Resolver invalidation
 
-MainRAM resolution is invalidated after:
+Invalidate and re-resolve after:
 
-- melonDS process restart
-- title/build ID change
-- impossible game code/language
-- invalid anchor after bounded retries
-- USB reconnect where process metadata has changed
+- melonDS process restart;
+- title/build ID change;
+- impossible game/language values;
+- anchor failure after bounded retries;
+- USB reconnect where process metadata changed.
 
-A soft reset does not automatically require a new host scan, but the previously resolved mapping must be revalidated before use.
+A soft reset may keep the same host backing base, but the mapping and game identity must still be revalidated before the next hunt decision.
 
 ## 8. HG/SS identification and regional offsets
 
-Read the game/language markers through `NDSMemory`.
-
-Recognized HG/SS language offsets are ported from Pokebot NDS:
+Read game/language through `NDSMemory`.
 
 ```text
-HeartGold:
+HeartGold
 JP -0x3B08
 EN  0x0000
 FR +0x0020
@@ -262,7 +251,7 @@ IT -0x0060
 DE -0x0020
 ES +0x0020
 
-SoulSilver:
+SoulSilver
 JP -0x3B08
 EN  0x0000
 FR +0x0020
@@ -271,44 +260,40 @@ DE -0x0020
 ES +0x0040
 ```
 
-Unsupported or contradictory game/language values produce `GAME_ID_MISMATCH` and disable automation.
+Unsupported or contradictory values cause `GAME_ID_MISMATCH` and disable automation.
 
-## 9. HG/SS pointers and starter data
+## 9. HG/SS starter pointers
 
-For the detected regional offset:
+For the detected region:
 
 ```text
 anchor = read32(0x021D4158 + regional_offset)
 starter_data = anchor + 0x1BC00
 ```
 
-The three starter records are read at 236-byte spacing.
+Read three records at 236-byte spacing.
 
-Expected species set:
+Expected species:
 
-- Chikorita: 152
-- Cyndaquil: 155
-- Totodile: 158
+- 152 Chikorita
+- 155 Cyndaquil
+- 158 Totodile
 
-The existing Pokebot NDS starter routine passes the starter structures through its raw-data path. The Python parser therefore has an explicit starter/raw structure mode rather than assuming all in-memory Gen IV structures require the normal encrypted-box-data path.
+Pokebot NDS uses its raw-data path for these starter structures. The Python parser therefore supports an explicit raw-starter mode instead of assuming all Gen IV in-memory records use the encrypted-box-data path.
 
-## 10. Gen IV Pokemon validation and shiny logic
+## 10. Pokemon validation and shiny logic
 
-No Pokemon record may influence reset decisions until it validates.
+A record may affect a reset decision only after validation.
 
 Validation includes:
 
-- correct record length
-- valid checksum
-- expected species
-- sensible structural values
-- stable repeated read
+- expected record size/layout;
+- checksum success;
+- expected species;
+- structurally sane values;
+- stability across repeated reads.
 
-For starter stability, read all three starters at least twice and require the following to remain unchanged between accepted samples:
-
-- PID
-- checksum
-- species
+For accepted starter samples, PID, checksum, and species must agree across at least two consecutive reads.
 
 Gen IV shiny value:
 
@@ -317,13 +302,13 @@ sv = TID XOR SID XOR PID_high XOR PID_low
 shiny = sv < 8
 ```
 
-Any shiny starter is sufficient to enter `SHINY_HOLD`.
+Any shiny starter enters `SHINY_HOLD`.
 
 ## 11. DS controller abstraction
 
-The HG/SS hunt talks in DS controls, not Switch controls.
+HG/SS hunt code uses DS controls, not Switch controls.
 
-Default mapping in this melonDS Switch fork:
+Default mapping in this melonDS fork:
 
 ```text
 DS A      -> Switch A
@@ -337,23 +322,17 @@ DS R      -> Switch R
 D-pad     -> Switch D-pad / supported left-stick mapping
 ```
 
-Soft reset is exposed as one semantic operation:
-
-```python
-ds.soft_reset()
-```
-
-and implemented as an overlapping hold of:
+`ds.soft_reset()` sends an overlapping hold of:
 
 ```text
 L + R + PLUS + MINUS
 ```
 
-The initial reset probe establishes a conservative reliable hold duration. It is optimized only after correctness is proven.
+The reset probe determines a conservative reliable hold time before any speed optimization.
 
 ## 12. InputGate
 
-All controller output passes through a single `InputGate`.
+Every controller command passes through one gate.
 
 States:
 
@@ -365,167 +344,119 @@ SHINY_HOLD
 SAFETY_HOLD
 ```
 
-`SHINY_HOLD` and `SAFETY_HOLD`:
+On either hold:
 
-- cancel queued input sequences
-- release any held controls
-- reject all subsequent hunt-generated input
+- cancel queued sequences;
+- release held buttons/sticks;
+- reject all further hunt-generated input.
 
-This is an independent protection in addition to the hunt state machine. A later logic bug calling `soft_reset()` cannot reset a shiny if the gate is already holding.
+This independently prevents a later logic error from resetting a shiny.
 
 ## 13. Starter hunt state machine
 
 ```text
 DISCONNECTED
-    |
     v
 USB_CONNECTED
-    |
     v
 MELONDS_IDENTIFIED
-    |
     v
 MAINRAM_RESOLVED
-    |
     v
 HGSS_IDENTIFIED
-    |
     v
-LOAD/CONTINUE
-    |
+LOAD_CONTINUE
     v
-WAITING_FOR_STARTER_SCREEN
-    |
+WAIT_STARTER_SCREEN
     v
 READ_3_STARTERS
-    |
     v
 VALIDATE_3_STARTERS
-    |---------------- invalid/ambiguous ----------------> SAFETY_HOLD
-    |
-    +---------------- any shiny ------------------------> SHINY_HOLD
-    |
-    +---------------- all valid non-shiny
-    v
-SOFT_RESET
-    |
-    v
-REVALIDATE HGSS/RAM
-    |
-    +----------------------------------------------------> repeat
+    +-- invalid/ambiguous --> SAFETY_HOLD
+    +-- any shiny ---------> SHINY_HOLD
+    +-- all valid non-shiny
+            v
+        SOFT_RESET
+            v
+       REVALIDATE
+            |
+            +-------------> repeat
 ```
 
-Only the explicit `ALL_VALID_NON_SHINY` decision may request a soft reset.
+Only explicit `ALL_VALID_NON_SHINY` may request a reset.
 
-## 14. Reset and startup synchronization
+## 14. Reset/startup synchronization
 
-The bot must not rely on a long blind sleep followed by button mashing.
+Do not use a long blind sleep followed by unconditional button mashing.
 
-After soft reset:
+After reset:
 
-1. send the overlapping reset combination
-2. enter `RESETTING`
-3. stop issuing further controls
-4. observe RAM transition away from the previous state
-5. wait until a valid HG/SS identity is visible again
-6. revalidate the dynamic anchor
-7. proceed through the continue/startup sequence
-8. interact with the starter machine only when the expected state is established
+1. send the overlapping reset chord;
+2. enter `RESETTING`;
+3. stop further controller output;
+4. observe RAM transition away from the old state;
+5. wait for valid HG/SS identity again;
+6. revalidate anchor/memory;
+7. proceed through continue/startup;
+8. interact with the starter machine only when the expected state is established.
 
-Where a useful RAM state marker has not yet been identified, conservative timing may be used temporarily during probing, but the following step must be validated before further input is sent.
+Where no useful RAM flag has yet been identified, conservative timing is allowed during probing, but the next step must be validated before further input.
 
 ## 15. Manual verification mode
 
-Before automatic resetting is enabled, `05_starter_watch_probe.py` runs with the InputGate unable to send controller commands.
+Before automatic resetting, `05_starter_watch_probe.py` runs with input disabled.
 
-The user manually opens the HG/SS starter selector. The probe displays all three decoded records and repeatedly validates them.
+The user manually opens the starter selector. The probe repeatedly displays and validates all three starters.
 
-This mode establishes that:
+This proves:
 
-- MainRAM translation is correct
-- the HG/SS anchor is correct
-- starter addresses are correct
-- raw starter parsing is correct
-- shiny calculation is correct
+- MainRAM translation;
+- HG/SS anchor;
+- starter addresses;
+- raw starter parsing;
+- shiny calculation.
 
-Only after this probe is independently verified may automatic reset logic be enabled.
+Automatic reset remains disabled until this is independently verified.
 
-## 16. Probe sequence
+## 16. Permanent probes
 
 ### `00_usb_probe.py`
 
-No game automation.
-
-Report:
-
-- botbase version
-- title ID
-- build ID
-- NSO base
-- heap base
+Reports botbase version, title ID, build ID, NSO base, and heap base. No game automation.
 
 ### `01_input_probe.py`
 
-Interactive manual controller test for:
-
-- A/B/X/Y
-- D-pad
-- Plus/Minus
-- L/R
+Manual A/B/X/Y, D-pad, Plus/Minus, L/R test.
 
 ### `02_reset_probe.py`
 
-Tests only the HG/SS soft-reset chord. No RAM automation is required for the first pass.
+Tests only the HG/SS reset chord.
 
 ### `03_mainram_probe.py`
 
-No controller output.
-
-Find MainRAM and report:
-
-- host MainRAM address
-- HG/SS version
-- language
-- validation evidence used
+No controller output. Resolves backing MainRAM and reports host base, resolver tier/evidence, HG/SS version, and language.
 
 ### `04_hgss_anchor_probe.py`
 
-No automatic hunt loop.
-
-Report:
-
-- regional offset
-- anchor address/value
-- derived starter data address
+Reports regional offset, anchor address/value, and starter data address.
 
 ### `05_starter_watch_probe.py`
 
-Zero controller output.
-
-When the user opens the starter selector, display all three starters including:
-
-- species
-- PID
-- checksum
-- TID/SID
-- shiny value
-- shiny state
-- nature
-- IVs
+Zero controller output. Displays species, PID, checksum, TID/SID, shiny value/state, nature, and IVs for all three starters.
 
 ### `06_starter_reset_probe.py`
 
 One-cycle automation only:
 
 ```text
-read -> validate -> all non-shiny -> one soft reset -> stop
+read -> validate -> all non-shiny -> one reset -> stop
 ```
 
 A shiny or any uncertainty holds instead.
 
 ### `07_hgss_starter_hunter.py`
 
-Continuous automation enabled only after probes 00-06 pass.
+Continuous loop enabled only after probes 00-06 pass.
 
 ## 17. Failure handling
 
@@ -542,36 +473,7 @@ RESET_TIMEOUT
 INPUT_ERROR
 ```
 
-### Recoverable transport/resolver faults
-
-`USB_LOST`:
-
-- disable input
-- attempt bounded reconnect
-- re-read botbase/title/build/process metadata
-- re-resolve/revalidate MainRAM if process identity changed
-- hold if recovery cannot prove state
-
-`MAINRAM_LOST`:
-
-- disable input
-- rerun resolver
-- revalidate HG/SS identity/language
-- resume only after proof succeeds
-
-### Ambiguous game/Pokemon faults
-
-`GAME_ID_MISMATCH` -> immediate `SAFETY_HOLD`.
-
-`ANCHOR_INVALID` -> bounded rereads, then resolver retry; hold if unresolved.
-
-`STARTER_DATA_INVALID` -> wait/re-read within a bounded window; hold on timeout.
-
-`STARTER_DATA_UNSTABLE` -> immediate hold once bounded stabilization fails.
-
-`RESET_TIMEOUT` -> stop all input; revalidate RAM; hold if a valid known state cannot be recovered.
-
-General rule:
+Rules:
 
 ```text
 uncertain transport -> bounded retry
@@ -581,9 +483,23 @@ uncertain Pokemon state -> hold
 possible shiny -> hold
 ```
 
-## 18. Diagnostics and support bundles
+`USB_LOST`: disable input, bounded reconnect, re-read process metadata, re-resolve if identity changed, otherwise hold.
 
-Internally log events as JSONL.
+`MAINRAM_LOST`: disable input, rerun resolver, revalidate HG/SS, resume only on proof.
+
+`GAME_ID_MISMATCH`: immediate `SAFETY_HOLD`.
+
+`ANCHOR_INVALID`: bounded rereads then resolver retry; hold if unresolved.
+
+`STARTER_DATA_INVALID`: bounded rereads; hold on timeout.
+
+`STARTER_DATA_UNSTABLE`: hold if stabilization fails.
+
+`RESET_TIMEOUT`: stop input, revalidate RAM/game, hold if no known state returns.
+
+## 18. Diagnostics
+
+Use JSONL for internal event logs and human-readable console output derived from them.
 
 Example:
 
@@ -591,12 +507,10 @@ Example:
 {"t":123.456,"event":"state","from":"HGSS_IDENTIFIED","to":"WAIT_STARTERS"}
 {"t":124.112,"event":"ram","addr":"0x021D4158","value":"0x0221AB00"}
 {"t":130.445,"event":"starter","slot":1,"species":152,"pid":"8F32A106","shiny":false}
-{"t":130.447,"event":"starter","slot":2,"species":155,"pid":"3A641C20","shiny":false}
-{"t":130.449,"event":"starter","slot":3,"species":158,"pid":"22F91230","shiny":false}
 {"t":130.600,"event":"decision","value":"RESET"}
 ```
 
-Every hold writes a support bundle containing at least:
+Every hold creates a support bundle containing at least:
 
 ```text
 summary.txt
@@ -609,51 +523,33 @@ starter_reads.json
 recent_events.log
 ```
 
-Include:
-
-- botbase version
-- Switch title/build ID
-- heap and NSO base
-- MainRAM host address
-- resolver strategy/evidence
-- HG/SS version/language
-- anchor
-- starter base
-- recent raw reads
-- decoded starter values
-- recent state transitions
-- recent controller commands
-- exact hold reason
+Include botbase version, title/build ID, heap/NSO base, MainRAM backing base, resolver evidence, HG/SS version/language, anchor, starter base, raw/decoded starter reads, recent transitions/inputs, and exact hold reason.
 
 ## 19. Testing strategy
 
 ### Unit tests
 
-Use captured fixtures to test without hardware:
+Use fixtures to test without hardware:
 
-- Gen IV checksum
-- raw starter parsing
-- encrypted PK4 parsing where reused later
-- shiny calculation, including boundary SV 7 vs 8
-- IV decoding
-- regional offsets
-- DS-to-host address translation
-- state-machine decision table
-- InputGate refusal after hold
+- Gen IV checksum;
+- raw starter parsing;
+- encrypted PK4 parsing for later reuse;
+- shiny boundary `SV 7` vs `SV 8`;
+- IV decoding;
+- HG/SS offsets;
+- DS-to-host translation;
+- state-machine decision table;
+- InputGate refusal after hold.
 
 ### Hardware gates
 
-Gate 1: 50 manual starter reads with zero bad accepted decodes.
+1. 50 manual starter reads, zero bad accepted decodes.
+2. 20 single-reset runs, 20/20 restart + reacquisition.
+3. 100 automated cycles, zero false shiny/unsafe reset/stuck startup.
+4. 500 automated resets, zero input after hold and zero corrupted records accepted.
+5. Long soak with deliberate USB reconnect, melonDS restart, and bot restart tests.
 
-Gate 2: 20 single-reset probe runs with 20/20 successful restart and RAM reacquisition.
-
-Gate 3: 100 automated starter cycles with zero false shiny, unsafe reset, or stuck startup.
-
-Gate 4: 500 automated resets with zero input after hold and zero corrupted starter records accepted.
-
-Gate 5: long-session soak including deliberate USB reconnect, melonDS restart, and bot restart tests.
-
-Primary safety metrics:
+Primary metrics:
 
 ```text
 unsafe resets = 0
@@ -662,60 +558,54 @@ accepted invalid starter records = 0
 input after hold = 0
 ```
 
-Reset speed is optimized only after these remain zero.
-
 ## 20. v0.1 scope
 
 Included:
 
-- Koi USB transport
-- melonDS MainRAM resolver
-- DS address translation
-- HG/SS and language detection
-- Gen IV/raw starter parser
-- shiny calculation
-- DS controller abstraction
-- InputGate
-- permanent probes 00-06
-- continuous HG/SS starter hunter
-- shiny/safety holds
-- JSONL event logs
-- diagnostic support bundles
-- session/reset counters
+- Koi USB transport;
+- heap-first melonDS MainRAM resolver;
+- DS address translation;
+- HG/SS/language detection;
+- Gen IV/raw starter parser;
+- shiny calculation;
+- DS controller abstraction;
+- InputGate;
+- probes 00-06;
+- continuous HG/SS starter hunter;
+- shiny/safety holds;
+- JSONL logs and support bundles;
+- session/reset counters.
 
-Explicitly excluded from v0.1:
+Excluded:
 
-- wild encounters
-- static encounters
-- eggs
-- auto capture
-- touch-driven game menus
-- Qt UI
-- D/P/Pt
-- Black/White
-- Black 2/White 2
-- Discord
-- RNG tracking
-- savestate automation
+- wild encounters;
+- statics;
+- eggs;
+- auto capture;
+- touch-driven menus;
+- Qt UI;
+- D/P/Pt;
+- B/W and B2/W2;
+- Discord;
+- RNG tracking;
+- savestate automation.
 
-## 21. v0.1 acceptance criteria
+## 21. Acceptance criteria
 
-1. Correctly detects HG or SS and language after every supported launch.
-2. Reliably resolves logical NDS MainRAM even when the Switch host address changes.
-3. Correctly reads Chikorita, Cyndaquil, and Totodile as validated starter records.
-4. Never resets unless all three starters pass checksum/species/stability validation and are non-shiny.
-5. Enters `SHINY_HOLD` immediately when any starter is shiny.
-6. Sends no hunt input after `SHINY_HOLD` or `SAFETY_HOLD`.
-7. Revalidates RAM/game state after every soft reset.
-8. Passes the 500-reset safety soak with zero unsafe resets.
-9. Produces a complete diagnostic bundle on each hold.
-10. User stop always releases held buttons/sticks and disables the InputGate.
+1. Correct HG/SS + language detection after supported launches.
+2. Reliable MainRAM backing discovery even if host addresses change.
+3. Correct validated reads of Chikorita, Cyndaquil, and Totodile.
+4. No reset unless all three pass checksum/species/stability validation and are non-shiny.
+5. Immediate `SHINY_HOLD` on any shiny.
+6. No hunt input after `SHINY_HOLD` or `SAFETY_HOLD`.
+7. RAM/game revalidation after every reset.
+8. Pass 500-reset safety soak with zero unsafe resets.
+9. Complete diagnostic bundle on each hold.
+10. User stop releases held controls and disables InputGate.
 
 ## 22. First implementation milestone
 
-Do not begin starter automation immediately.
-
-Implement and hardware-test these first:
+Implement and hardware-test these before starter parsing or automation:
 
 ```text
 00_usb_probe.py
@@ -724,18 +614,18 @@ Implement and hardware-test these first:
 03_mainram_probe.py
 ```
 
-Only after all four pass should implementation proceed to the HG/SS anchor, Pokemon parser, starter watcher, and reset automation.
+Only after all four pass should implementation continue to the HG/SS anchor, parser, watcher, and reset loop.
 
 ## 23. Future extension path
 
-After v0.1 is proven stable, retain the same lower layers and add features as separate designs/plans:
+After v0.1 is stable, add separate planned increments for:
 
-1. HG/SS wild encounters and safe fleeing
-2. HG/SS statics/gifts
-3. fishing/headbutt
-4. eggs
-5. Qt UI and persisted statistics
-6. D/P/Pt profiles
-7. B/W and B2/W2 profiles
+1. HG/SS wild encounters and safe fleeing;
+2. HG/SS statics/gifts;
+3. fishing/headbutt;
+4. eggs;
+5. Qt UI/statistics;
+6. D/P/Pt profiles;
+7. B/W and B2/W2 profiles.
 
-Each later game/hunt should reuse `KoiUSBTransport`, `NDSMemory`, `DSController`, `InputGate`, diagnostics, and common Pokemon parsing rather than adding transport or emulator-specific logic to hunt modules.
+All later work should reuse `KoiUSBTransport`, `NDSMemory`, `DSController`, `InputGate`, diagnostics, and common Pokemon parsing.
