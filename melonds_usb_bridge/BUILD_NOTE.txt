@@ -1,0 +1,1 @@
+USB-only build: Koi botbase 3.33 remains the sole PC-to-Switch transport. The melonDS patch only exposes a small aligned heap record for Koi to locate. No UDP bridge is included in this build.
