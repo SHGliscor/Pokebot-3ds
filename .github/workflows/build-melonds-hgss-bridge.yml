@@ -1,0 +1,74 @@
+name: Build melonDS HGSS Pokebot Bridge
+
+on:
+  push:
+    branches:
+      - build/melonds-hgss-bridge
+    paths:
+      - .github/workflows/build-melonds-hgss-bridge.yml
+      - melonds_switch_bridge/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+
+    steps:
+      - name: Checkout Pokebot bridge files
+        uses: actions/checkout@v4
+
+      - name: Clone exact melonDS Switch release
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch v0.8.0-switch-upscale.1 --recurse-submodules \
+            https://github.com/trulymust/melonDS-switch-upscale.git melonds-src
+          git -C melonds-src submodule update --init --recursive
+
+      - name: Apply read-only Pokebot bridge
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 melonds_switch_bridge/APPLY_MELONDS_BRIDGE_PATCH.py melonds-src
+          grep -n 'PokebotBridge' melonds-src/src/frontend/switch/main.cpp
+          grep -n 'PokebotBridge.cpp' melonds-src/src/frontend/switch/CMakeLists.txt
+
+      - name: Configure Switch build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cmake -S melonds-src -B melonds-src/build \
+            -DENABLE_OGLRENDERER=OFF \
+            -DBUILD_QT_SDL=OFF \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-cross-Switch.cmake \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build melonDS NRO
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cmake --build melonds-src/build --parallel "$(nproc)"
+          test -f melonds-src/build/melonDS.nro
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p dist
+          cp melonds-src/build/melonDS.nro dist/melonDS-PokebotBridge.nro
+          sha256sum dist/melonDS-PokebotBridge.nro | tee dist/SHA256.txt
+          printf '%s\n' 'Upstream: trulymust/melonDS-switch-upscale v0.8.0-switch-upscale.1' > dist/BUILD_INFO.txt
+          printf '%s\n' 'Pokebot bridge: UDP 4953, read-only NDS MainRAM bridge' >> dist/BUILD_INFO.txt
+
+      - name: Upload melonDS Pokebot Bridge
+        uses: actions/upload-artifact@v4
+        with:
+          name: melonDS-PokebotBridge-HGSS
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
