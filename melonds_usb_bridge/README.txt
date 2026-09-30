@@ -1,0 +1,1 @@
+USB-only melonDS bridge for the HGSS bot. Uses Koi botbase 3.33 as the sole PC-to-Switch transport. The patched emulator publishes a small aligned heap record containing its live DS MainRAM pointer. The PC-side probe locates that record and then performs read-only RAM access through Koi USB. No network transport is used.
