@@ -31,7 +31,8 @@ def patch_source(source_root: Path) -> list[Path]:
 
     main_text = main_cpp.read_text(encoding="utf-8")
     main_text = insert_once(main_text, '#include "InputConfig.h"\n', '#include "PokebotBridge.h"\n', "main include")
-    main_text = insert_once(main_text, '    Emulation::Init();\n', '    PokebotBridge::Init();\n', "bridge init")
+    main_text = insert_once(main_text, '    Frontend::Init_ROM();\n', '    PokebotBridge::Init();\n', "bridge allocation")
+    main_text = insert_once(main_text, '    Emulation::Init();\n', '    PokebotBridge::Init();\n', "bridge pointer refresh")
     deinit_anchor = '    Emulation::DeInit();\n'
     if '    PokebotBridge::DeInit();\n' not in main_text:
         if deinit_anchor not in main_text:
