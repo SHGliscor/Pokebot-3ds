@@ -1,0 +1,1 @@
+Transport: Koi USB botbase 3.33 only. Network transport is not used.
