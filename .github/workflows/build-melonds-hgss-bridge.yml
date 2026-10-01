@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/build-melonds-hgss-bridge.yml
       - melonds_switch_bridge/**
+      - melonds_usb_bridge/**
   workflow_dispatch:
 
 permissions:
@@ -37,6 +38,7 @@ jobs:
           python3 melonds_switch_bridge/APPLY_MELONDS_BRIDGE_PATCH.py melonds-src
           grep -n 'PokebotBridge' melonds-src/src/frontend/switch/main.cpp
           grep -n 'PokebotBridge.cpp' melonds-src/src/frontend/switch/CMakeLists.txt
+          grep -n '__libnx_initheap' melonds-src/src/frontend/switch/PokebotBridge.cpp
 
       - name: Configure Switch build
         shell: bash
@@ -55,20 +57,44 @@ jobs:
           cmake --build melonds-src/build --parallel "$(nproc)"
           test -f melonds-src/build/melonDS.nro
 
-      - name: Package artifact
+      - name: Package artifact and fixed bridge layout
         shell: bash
         run: |
           set -euxo pipefail
           mkdir -p dist
-          cp melonds-src/build/melonDS.nro dist/melonDS-PokebotBridge.nro
-          sha256sum dist/melonDS-PokebotBridge.nro | tee dist/SHA256.txt
-          printf '%s\n' 'Upstream: trulymust/melonDS-switch-upscale v0.8.0-switch-upscale.1' > dist/BUILD_INFO.txt
-          printf '%s\n' 'Pokebot bridge: UDP 4953, read-only NDS MainRAM bridge' >> dist/BUILD_INFO.txt
+          cp melonds-src/build/melonDS.nro dist/melonDS-PokebotBridge-USB.nro
+          python3 - <<'PY'
+          import json, struct
+          from pathlib import Path
 
-      - name: Upload melonDS Pokebot Bridge
+          path = Path('dist/melonDS-PokebotBridge-USB.nro')
+          raw = path.read_bytes()
+          if raw[0x10:0x14] != b'NRO0':
+              raise SystemExit('NRO0 header missing')
+          data_off = struct.unpack_from('<I', raw, 0x30)[0]
+          data_size = struct.unpack_from('<I', raw, 0x34)[0]
+          bss_size = struct.unpack_from('<I', raw, 0x38)[0]
+          rw_size = (data_size + bss_size + 0xFFF) & ~0xFFF
+          mapped_nro_size = data_off + rw_size
+          layout = {
+              'format': 'pokebot-melonds-usb-bridge-layout-v1',
+              'bridge_heap_offset': f'0x{mapped_nro_size:X}',
+              'bridge_page_size': '0x1000',
+              'magic': 'POKEBOT_MELONDS_USB_BRIDGE_V1',
+          }
+          Path('dist/bridge_layout.json').write_text(json.dumps(layout, indent=2) + '\n')
+          print(f'bridge_heap_offset=0x{mapped_nro_size:X}')
+          PY
+          sha256sum dist/melonDS-PokebotBridge-USB.nro | tee dist/SHA256.txt
+          printf '%s\n' 'Upstream: trulymust/melonDS-switch-upscale v0.8.0-switch-upscale.1' > dist/BUILD_INFO.txt
+          printf '%s\n' 'Transport: Koi usb-botbase 3.33 only; no Wi-Fi bridge' >> dist/BUILD_INFO.txt
+          printf '%s\n' 'Bridge: first reserved page of nx-hbloader NRO heap override' >> dist/BUILD_INFO.txt
+          cat dist/bridge_layout.json
+
+      - name: Upload melonDS Pokebot USB Bridge
         uses: actions/upload-artifact@v4
         with:
-          name: melonDS-PokebotBridge-HGSS
+          name: melonDS-PokebotBridge-HGSS-USB-FixedLayout
           path: dist/
           if-no-files-found: error
           retention-days: 14
